@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Card Stacker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --canvas: #d6d9dd;
+        --space-12: 48px;
+        --sans: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text",
+          system-ui, sans-serif;
+
+        /* card tokens (from Figma 1:7) */
+        --card-bg: #1a1a1a;
+        --card-radius: 16px;
+        --card-pad: 12px;
+        --card-gap: 12px;
+        --card-img: 78px;
+        --card-img-bg: rgba(186, 186, 186, 0.2);
+        --card-img-radius: 8px;
+        --card-title: #d2d2d2;
+        --card-subtitle: #777;
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body, #root { height: 100%; }
+
+      body {
+        margin: 0;
+        font-family: var(--sans);
+        background: var(--canvas);
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+
+      /* ── Stage (Crypto glass widget BG) ───────────────────── */
+      .stage {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: var(--space-12);
+        position: relative;
+        overflow: hidden;
+        background: radial-gradient(
+            1200px 800px at 70% 20%,
+            #e6e9ed 0%,
+            transparent 60%
+          ),
+          radial-gradient(900px 700px at 20% 90%, #c9ccd1 0%, transparent 55%),
+          var(--canvas);
+      }
+
+      .stage::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(
+            rgba(12, 15, 20, 0.045) 1px,
+            transparent 1px
+          );
+        background-size: 24px 24px;
+        mask-image: radial-gradient(
+          ellipse at center,
+          black 40%,
+          transparent 80%
+        );
+        pointer-events: none;
+      }
+
+      /* ── Vertical stack ───────────────────────────────────── */
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 400px;
+        position: relative;
+      }
+
+      /* ── Card (matches Figma 1:7) ─────────────────────────── */
+      .card {
+        background: var(--card-bg);
+        border-radius: var(--card-radius);
+        padding: var(--card-pad);
+        display: flex;
+        gap: var(--card-gap);
+        align-items: center;
+      }
+
+      .card-img {
+        width: var(--card-img);
+        height: var(--card-img);
+        border-radius: var(--card-img-radius);
+        background: var(--card-img-bg);
+        flex-shrink: 0;
+      }
+
+      .card-text {
+        flex: 1 0 0;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .card-title {
+        margin: 0;
+        font-family: var(--sans);
+        font-weight: 500;
+        font-size: 18px;
+        line-height: 27px;
+        color: var(--card-title);
+      }
+
+      .card-subtitle {
+        margin: 0;
+        font-family: var(--sans);
+        font-weight: 400;
+        font-size: 14px;
+        line-height: 21px;
+        color: var(--card-subtitle);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://esm.sh/react@18.3.1",
+          "react-dom/client": "https://esm.sh/react-dom@18.3.1/client"
+        }
+      }
+    </script>
+
+    <script type="module">
+      import React from "react";
+      import { createRoot } from "react-dom/client";
+
+      const h = React.createElement;
+
+      const CARDS = [
+        { title: "Header of card", subtitle: "Subtitle" },
+        { title: "Header of card", subtitle: "Subtitle" },
+        { title: "Header of card", subtitle: "Subtitle" },
+        { title: "Header of card", subtitle: "Subtitle" },
+        { title: "Header of card", subtitle: "Subtitle" },
+        { title: "Header of card", subtitle: "Subtitle" },
+      ];
+
+      function Card({ title, subtitle }) {
+        return h(
+          "article",
+          { className: "card" },
+          h("div", { className: "card-img" }),
+          h(
+            "div",
+            { className: "card-text" },
+            h("h3", { className: "card-title" }, title),
+            h("p", { className: "card-subtitle" }, subtitle)
+          )
+        );
+      }
+
+      function App() {
+        return h(
+          "div",
+          { className: "stage" },
+          h(
+            "div",
+            { className: "stack" },
+            CARDS.map((c, i) => h(Card, { key: i, ...c }))
+          )
+        );
+      }
+
+      createRoot(document.getElementById("root")).render(h(App));
+    </script>
+  </body>
+</html>
