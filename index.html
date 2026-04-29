@@ -82,6 +82,7 @@
         gap: 8px;
         width: 400px;
         position: relative;
+        perspective: 1200px;
       }
 
       /* ── Card (matches Figma 1:7) ─────────────────────────── */
@@ -92,6 +93,21 @@
         display: flex;
         gap: var(--card-gap);
         align-items: center;
+        transform: translate(0, 0) rotate(0deg);
+        transform-origin: 50% 100%;
+        transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+                    box-shadow 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+        will-change: transform;
+        cursor: pointer;
+        z-index: var(--z);
+      }
+
+      /* Spread: cards fan from a shared bottom pivot, like a hand of cards */
+      .stack.spread .card {
+        transform: translate(var(--tx), var(--ty)) rotate(var(--rot));
+        box-shadow:
+          0 24px 60px -20px rgba(8, 10, 14, 0.55),
+          0 8px 24px -10px rgba(8, 10, 14, 0.35);
       }
 
       .card-img {
@@ -142,7 +158,7 @@
     </script>
 
     <script type="module">
-      import React from "react";
+      import React, { useState } from "react";
       import { createRoot } from "react-dom/client";
 
       const h = React.createElement;
@@ -156,10 +172,34 @@
         { title: "Header of card", subtitle: "Subtitle" },
       ];
 
-      function Card({ title, subtitle }) {
+      const N = CARDS.length;
+      const CARD_H = 102;        // 78px image + 12px*2 padding
+      const STACK_GAP = 8;       // matches .stack gap
+      const ROW_PITCH = CARD_H + STACK_GAP;
+      const SPREAD_X = 80;       // horizontal spacing between card bottoms when fanned
+      const FAN_DEG = 7;         // degrees of rotation between adjacent cards in fan
+
+      function Card({ title, subtitle, i, onClick }) {
+        // Top card (i=0) gets lowest z; bottom card (i=N-1) gets highest.
+        const z = i + 1;
+        // Offsets bring each card from its flex position to the stack center,
+        // then fan it around a shared bottom-center pivot.
+        const tx = (i - (N - 1) / 2) * SPREAD_X;
+        const ty = ((N - 1) / 2 - i) * ROW_PITCH;
+        const rot = (i - (N - 1) / 2) * FAN_DEG;
+
         return h(
           "article",
-          { className: "card" },
+          {
+            className: "card",
+            onClick,
+            style: {
+              "--z": z,
+              "--tx": tx + "px",
+              "--ty": ty + "px",
+              "--rot": rot + "deg",
+            },
+          },
           h("div", { className: "card-img" }),
           h(
             "div",
@@ -171,13 +211,28 @@
       }
 
       function App() {
+        const [spread, setSpread] = useState(false);
+
         return h(
           "div",
-          { className: "stage" },
+          {
+            className: "stage",
+            onClick: () => setSpread(false),
+          },
           h(
             "div",
-            { className: "stack" },
-            CARDS.map((c, i) => h(Card, { key: i, ...c }))
+            { className: "stack" + (spread ? " spread" : "") },
+            CARDS.map((c, i) =>
+              h(Card, {
+                key: i,
+                i,
+                ...c,
+                onClick: (e) => {
+                  e.stopPropagation();
+                  setSpread((s) => !s);
+                },
+              })
+            )
           )
         );
       }
