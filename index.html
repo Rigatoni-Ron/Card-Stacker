@@ -102,8 +102,8 @@
         transform: translate3d(var(--mx), var(--my), 0) rotate(var(--mrot));
         transform-origin: 50% 100%;
         transition: transform 0.75s cubic-bezier(0.22, 1, 0.36, 1),
-                    box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-                    filter 0.3s ease;
+                    box-shadow 0.18s ease-out,
+                    background 0.18s ease-out;
         will-change: transform;
         cursor: pointer;
         z-index: var(--z);
@@ -120,13 +120,9 @@
           0 8px 24px -10px rgba(8, 10, 14, 0.35);
       }
 
-      /* Subtle hover only in the clean lineup: brighten + thin outline */
+      /* Subtle hover only in the clean lineup: card surface brightens. */
       .stack.spread .card:hover {
-        filter: brightness(1.08);
-        box-shadow:
-          0 0 0 1px rgba(255, 255, 255, 0.22),
-          0 28px 64px -18px rgba(8, 10, 14, 0.6),
-          0 10px 26px -10px rgba(8, 10, 14, 0.4);
+        background: #262626;
       }
 
       .card-img {
@@ -185,12 +181,18 @@
       const h = React.createElement;
 
       const CARDS = [
-        { title: "Header of card", subtitle: "Subtitle", img: "images/eva-01.jpg" },
-        { title: "Header of card", subtitle: "Subtitle", img: "images/eva-02.jpg" },
-        { title: "Header of card", subtitle: "Subtitle", img: "images/eva-prototype.jpg" },
-        { title: "Header of card", subtitle: "Subtitle", img: "images/eva-00.jpg" },
-        { title: "Header of card", subtitle: "Subtitle", img: "images/eva-08.jpg" },
-        { title: "Header of card", subtitle: "Subtitle", img: "images/eva-mark-06.jpg" },
+        // purple EVA-01 → lilac outline
+        { title: "Header of card", subtitle: "Subtitle", img: "images/eva-01.jpg",        outline: "rgba(157, 102, 217, 0.95)" },
+        // red EVA-02 → red outline
+        { title: "Header of card", subtitle: "Subtitle", img: "images/eva-02.jpg",        outline: "rgba(228, 79, 64, 0.95)" },
+        // pink chainsaw EVA-08 → deep pink outline
+        { title: "Header of card", subtitle: "Subtitle", img: "images/eva-08.jpg",        outline: "rgba(224, 84, 150, 0.95)" },
+        // blue Prototype EVA → blue outline
+        { title: "Header of card", subtitle: "Subtitle", img: "images/eva-prototype.jpg", outline: "rgba(76, 122, 214, 0.95)" },
+        // white/orange EVA-00 → burnt yellow outline
+        { title: "Header of card", subtitle: "Subtitle", img: "images/eva-00.jpg",        outline: "rgba(214, 152, 53, 0.95)" },
+        // black/red EVA Mark-06 → dark grey outline
+        { title: "Header of card", subtitle: "Subtitle", img: "images/eva-mark-06.jpg",   outline: "rgba(96, 100, 112, 0.95)" },
       ];
 
       const N = CARDS.length;
@@ -208,7 +210,7 @@
         { mx:  18, my: -10, mrot:  -9 },
       ];
 
-      function Card({ title, subtitle, img, i, onClick }) {
+      function Card({ title, subtitle, img, outline, i, onClick }) {
         // Top of array (i=0) gets lowest z; bottom (i=N-1) is highest and sits on top.
         const z = i + 1;
         // Clean lineup: cards stack vertically around the centerline, no rotation.
@@ -230,6 +232,7 @@
               "--tx": tx + "px",
               "--ty": ty + "px",
               "--rot": rot + "deg",
+              "--outline": outline,
             },
           },
           h("img", { className: "card-img", src: img, alt: "" }),
