@@ -49,6 +49,8 @@
         padding: var(--space-12);
         position: relative;
         overflow: hidden;
+        perspective: 1400px;
+        perspective-origin: 50% 35%;
         background: radial-gradient(
             1200px 800px at 70% 20%,
             #e6e9ed 0%,
@@ -75,39 +77,56 @@
         pointer-events: none;
       }
 
-      /* ── Vertical stack ───────────────────────────────────── */
+      /* ── Stack: messy pile by default; cleans up into a fan on click ── */
       .stack {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        width: 400px;
         position: relative;
-        perspective: 1200px;
+        width: 400px;
+        height: 220px;
+        transform-style: preserve-3d;
       }
 
       /* ── Card (matches Figma 1:7) ─────────────────────────── */
       .card {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        margin-top: -51px;   /* half of 102 (card height) */
+        margin-left: -200px; /* half of 400 (card width) */
+        width: 400px;
         background: var(--card-bg);
         border-radius: var(--card-radius);
         padding: var(--card-pad);
         display: flex;
         gap: var(--card-gap);
         align-items: center;
-        transform: translate(0, 0) rotate(0deg);
+        transform: translate3d(var(--mx), var(--my), 0) rotate(var(--mrot));
         transform-origin: 50% 100%;
-        transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
-                    box-shadow 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+        transition: transform 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+                    box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+                    filter 0.3s ease;
         will-change: transform;
         cursor: pointer;
         z-index: var(--z);
+        box-shadow:
+          0 14px 32px -12px rgba(8, 10, 14, 0.55),
+          0 5px 14px -6px rgba(8, 10, 14, 0.35);
       }
 
-      /* Spread: cards fan from a shared bottom pivot, like a hand of cards */
+      /* Fanned: cards fan from a shared bottom pivot, like a hand of cards */
       .stack.spread .card {
-        transform: translate(var(--tx), var(--ty)) rotate(var(--rot));
+        transform: translate3d(var(--tx), var(--ty), 0) rotate(var(--rot));
         box-shadow:
           0 24px 60px -20px rgba(8, 10, 14, 0.55),
           0 8px 24px -10px rgba(8, 10, 14, 0.35);
+      }
+
+      /* Subtle hover only in the clean lineup: brighten + thin outline */
+      .stack.spread .card:hover {
+        filter: brightness(1.08);
+        box-shadow:
+          0 0 0 1px rgba(255, 255, 255, 0.22),
+          0 28px 64px -18px rgba(8, 10, 14, 0.6),
+          0 10px 26px -10px rgba(8, 10, 14, 0.4);
       }
 
       .card-img {
@@ -116,6 +135,8 @@
         border-radius: var(--card-img-radius);
         background: var(--card-img-bg);
         flex-shrink: 0;
+        object-fit: cover;
+        display: block;
       }
 
       .card-text {
@@ -164,29 +185,37 @@
       const h = React.createElement;
 
       const CARDS = [
-        { title: "Header of card", subtitle: "Subtitle" },
-        { title: "Header of card", subtitle: "Subtitle" },
-        { title: "Header of card", subtitle: "Subtitle" },
-        { title: "Header of card", subtitle: "Subtitle" },
-        { title: "Header of card", subtitle: "Subtitle" },
-        { title: "Header of card", subtitle: "Subtitle" },
+        { title: "Header of card", subtitle: "Subtitle", img: "images/eva-01.jpg" },
+        { title: "Header of card", subtitle: "Subtitle", img: "images/eva-02.jpg" },
+        { title: "Header of card", subtitle: "Subtitle", img: "images/eva-prototype.jpg" },
+        { title: "Header of card", subtitle: "Subtitle", img: "images/eva-00.jpg" },
+        { title: "Header of card", subtitle: "Subtitle", img: "images/eva-08.jpg" },
+        { title: "Header of card", subtitle: "Subtitle", img: "images/eva-mark-06.jpg" },
       ];
 
       const N = CARDS.length;
       const CARD_H = 102;        // 78px image + 12px*2 padding
-      const STACK_GAP = 8;       // matches .stack gap
+      const STACK_GAP = 12;      // vertical gap between cards in the clean lineup
       const ROW_PITCH = CARD_H + STACK_GAP;
-      const SPREAD_X = 80;       // horizontal spacing between card bottoms when fanned
-      const FAN_DEG = 7;         // degrees of rotation between adjacent cards in fan
 
-      function Card({ title, subtitle, i, onClick }) {
-        // Top card (i=0) gets lowest z; bottom card (i=N-1) gets highest.
+      // Per-card offsets for the messy pile (hand-tuned to look thrown-down).
+      const MESSY = [
+        { mx: -56, my: -28, mrot: -15 },
+        { mx:  44, my: -38, mrot:  11 },
+        { mx: -22, my:  18, mrot:  -6 },
+        { mx:  36, my:  30, mrot:  14 },
+        { mx: -68, my:   8, mrot:  17 },
+        { mx:  18, my: -10, mrot:  -9 },
+      ];
+
+      function Card({ title, subtitle, img, i, onClick }) {
+        // Top of array (i=0) gets lowest z; bottom (i=N-1) is highest and sits on top.
         const z = i + 1;
-        // Offsets bring each card from its flex position to the stack center,
-        // then fan it around a shared bottom-center pivot.
-        const tx = (i - (N - 1) / 2) * SPREAD_X;
-        const ty = ((N - 1) / 2 - i) * ROW_PITCH;
-        const rot = (i - (N - 1) / 2) * FAN_DEG;
+        // Clean lineup: cards stack vertically around the centerline, no rotation.
+        const tx = 0;
+        const ty = (i - (N - 1) / 2) * ROW_PITCH;
+        const rot = 0;
+        const m = MESSY[i] || { mx: 0, my: 0, mrot: 0 };
 
         return h(
           "article",
@@ -195,12 +224,15 @@
             onClick,
             style: {
               "--z": z,
+              "--mx": m.mx + "px",
+              "--my": m.my + "px",
+              "--mrot": m.mrot + "deg",
               "--tx": tx + "px",
               "--ty": ty + "px",
               "--rot": rot + "deg",
             },
           },
-          h("div", { className: "card-img" }),
+          h("img", { className: "card-img", src: img, alt: "" }),
           h(
             "div",
             { className: "card-text" },
