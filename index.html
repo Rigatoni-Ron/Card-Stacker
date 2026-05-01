@@ -103,7 +103,8 @@
         transform-origin: 50% 100%;
         transition: transform 0.75s cubic-bezier(0.22, 1, 0.36, 1),
                     box-shadow 0.18s ease-out,
-                    background 0.18s ease-out;
+                    background 0.18s ease-out,
+                    opacity 0.45s ease-out;
         will-change: transform;
         cursor: pointer;
         z-index: var(--z);
@@ -120,8 +121,27 @@
           0 8px 24px -10px rgba(8, 10, 14, 0.35);
       }
 
-      /* Subtle hover only in the clean lineup: card surface brightens. */
-      .stack.spread .card:hover {
+      /* Selected: non-pressed cards exit left, pressed card slides up to top slot. */
+      .stack.selected .card {
+        transform: translate3d(-720px, var(--ty), 0) rotate(0deg);
+        opacity: 0;
+        pointer-events: none;
+        transition-duration: 0.6s, 0.18s, 0.18s, 0.45s;
+      }
+
+      .stack.selected .card.is-selected {
+        transform: translate3d(0, var(--top-ty), 0) rotate(0deg);
+        opacity: 1;
+        pointer-events: auto;
+        transition-delay: 0.3s;
+        transition-duration: 0.7s, 0.18s, 0.18s, 0s;
+        box-shadow:
+          0 24px 60px -20px rgba(8, 10, 14, 0.55),
+          0 8px 24px -10px rgba(8, 10, 14, 0.35);
+      }
+
+      /* Hover: card surface brightens (works in both messy and lineup states). */
+      .card:hover {
         background: #262626;
       }
 
@@ -210,9 +230,13 @@
         { mx:  18, my: -10, mrot:  -9 },
       ];
 
-      function Card({ title, subtitle, img, outline, i, onClick }) {
+      // Y-position of the top card in the clean lineup; the selected card snaps here.
+      const TOP_TY = (0 - (N - 1) / 2) * ROW_PITCH;
+
+      function Card({ title, subtitle, img, outline, i, isSelected, onClick }) {
         // Top of array (i=0) gets lowest z; bottom (i=N-1) is highest and sits on top.
-        const z = i + 1;
+        // When a card is selected it must paint above the others as they exit.
+        const z = isSelected ? N + 1 : i + 1;
         // Clean lineup: cards stack vertically around the centerline, no rotation.
         const tx = 0;
         const ty = (i - (N - 1) / 2) * ROW_PITCH;
@@ -222,7 +246,7 @@
         return h(
           "article",
           {
-            className: "card",
+            className: "card" + (isSelected ? " is-selected" : ""),
             onClick,
             style: {
               "--z": z,
@@ -231,6 +255,7 @@
               "--mrot": m.mrot + "deg",
               "--tx": tx + "px",
               "--ty": ty + "px",
+              "--top-ty": TOP_TY + "px",
               "--rot": rot + "deg",
               "--outline": outline,
             },
@@ -245,26 +270,39 @@
         );
       }
 
+      // States: "messy" (default thrown pile), "spread" (clean vertical lineup),
+      // "selected" (others exit left, picked card rides up to the top slot).
       function App() {
-        const [spread, setSpread] = useState(false);
+        const [mode, setMode] = useState("messy");
+        const [selected, setSelected] = useState(null);
+
+        const reset = () => {
+          setMode("messy");
+          setSelected(null);
+        };
 
         return h(
           "div",
           {
             className: "stage",
-            onClick: () => setSpread(false),
+            onClick: reset,
           },
           h(
             "div",
-            { className: "stack" + (spread ? " spread" : "") },
+            { className: "stack " + mode },
             CARDS.map((c, i) =>
               h(Card, {
                 key: i,
                 i,
                 ...c,
+                isSelected: selected === i,
                 onClick: (e) => {
                   e.stopPropagation();
-                  setSpread((s) => !s);
+                  if (mode === "messy") setMode("spread");
+                  else if (mode === "spread") {
+                    setSelected(i);
+                    setMode("selected");
+                  } else reset();
                 },
               })
             )
