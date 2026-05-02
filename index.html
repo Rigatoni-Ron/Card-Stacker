@@ -123,13 +123,14 @@
       }
 
       /* Selected card: slide up and morph taller start together so the
-         whole thing reads as one continuous motion. */
+         whole thing reads as one continuous motion. Kicks off almost
+         immediately, overlapping the others' exit. */
       .stack.selected .card.is-selected {
         transform: translate3d(0, var(--top-ty), 0) rotate(0deg);
         height: 680px;
         opacity: 1;
         pointer-events: auto;
-        transition-delay: 0.3s, 0.3s, 0s, 0s, 0s;
+        transition-delay: 0.05s, 0.05s, 0s, 0s, 0s;
         transition-duration: 0.9s, 0.9s, 0.18s, 0.18s, 0s;
         box-shadow:
           0 24px 60px -20px rgba(8, 10, 14, 0.55),
@@ -178,7 +179,7 @@
         left: 12px;
         width: 376px;
         height: 376px;
-        transition-delay: 0.3s, 0.3s, 0.3s, 0.3s;
+        transition-delay: 0.05s, 0.05s, 0.05s, 0.05s;
         transition-duration: 0.9s, 0.9s, 0.9s, 0.9s;
       }
 
@@ -186,7 +187,7 @@
         top: 400px;
         left: 12px;
         right: 12px;
-        transition-delay: 0.3s, 0.3s, 0.3s;
+        transition-delay: 0.05s, 0.05s, 0.05s;
         transition-duration: 0.9s, 0.9s, 0.9s;
       }
 
