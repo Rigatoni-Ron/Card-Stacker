@@ -77,7 +77,7 @@
         pointer-events: none;
       }
 
-      /* ── Stack: messy pile by default; cleans up into a fan on click ── */
+      /* ── Stack: vertical lineup of cards ────────────────────── */
       .stack {
         position: relative;
         width: 400px;
@@ -86,36 +86,29 @@
       }
 
       /* ── Card (matches Figma 1:7) ─────────────────────────── */
+      /* Children are absolutely positioned so we can fluidly morph
+         from a row layout (image left, text right) to a column layout
+         (image on top, text below) when the card is selected. */
       .card {
         position: absolute;
         top: 50%;
         left: 50%;
-        margin-top: -51px;   /* half of 102 (card height) */
+        margin-top: -51px;   /* half of 102 (collapsed card height) */
         margin-left: -200px; /* half of 400 (card width) */
         width: 400px;
+        height: 102px;
         background: var(--card-bg);
         border-radius: var(--card-radius);
-        padding: var(--card-pad);
-        display: flex;
-        gap: var(--card-gap);
-        align-items: center;
-        transform: translate3d(var(--mx), var(--my), 0) rotate(var(--mrot));
+        transform: translate3d(0, var(--ty), 0);
         transform-origin: 50% 100%;
         transition: transform 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+                    height 0.7s cubic-bezier(0.22, 1, 0.36, 1),
                     box-shadow 0.18s ease-out,
                     background 0.18s ease-out,
                     opacity 0.45s ease-out;
         will-change: transform;
         cursor: pointer;
         z-index: var(--z);
-        box-shadow:
-          0 14px 32px -12px rgba(8, 10, 14, 0.55),
-          0 5px 14px -6px rgba(8, 10, 14, 0.35);
-      }
-
-      /* Fanned: cards fan from a shared bottom pivot, like a hand of cards */
-      .stack.spread .card {
-        transform: translate3d(var(--tx), var(--ty), 0) rotate(var(--rot));
         box-shadow:
           0 24px 60px -20px rgba(8, 10, 14, 0.55),
           0 8px 24px -10px rgba(8, 10, 14, 0.35);
@@ -126,41 +119,75 @@
         transform: translate3d(-720px, var(--ty), 0) rotate(0deg);
         opacity: 0;
         pointer-events: none;
-        transition-duration: 0.6s, 0.18s, 0.18s, 0.45s;
+        transition-duration: 0.6s, 0.7s, 0.18s, 0.18s, 0.45s;
       }
 
+      /* Selected card: slide up and morph taller start together so the
+         whole thing reads as one continuous motion. */
       .stack.selected .card.is-selected {
         transform: translate3d(0, var(--top-ty), 0) rotate(0deg);
+        height: 680px;
         opacity: 1;
         pointer-events: auto;
-        transition-delay: 0.3s;
-        transition-duration: 0.7s, 0.18s, 0.18s, 0s;
+        transition-delay: 0.3s, 0.3s, 0s, 0s, 0s;
+        transition-duration: 0.9s, 0.9s, 0.18s, 0.18s, 0s;
         box-shadow:
           0 24px 60px -20px rgba(8, 10, 14, 0.55),
           0 8px 24px -10px rgba(8, 10, 14, 0.35);
       }
 
-      /* Hover: card surface brightens (works in both messy and lineup states). */
+      /* Hover: card surface brightens. */
       .card:hover {
         background: #262626;
       }
 
       .card-img {
+        position: absolute;
+        top: 12px;
+        left: 12px;
         width: var(--card-img);
         height: var(--card-img);
         border-radius: var(--card-img-radius);
         background: var(--card-img-bg);
-        flex-shrink: 0;
         object-fit: cover;
         display: block;
+        transition: top 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+                    left 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+                    width 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+                    height 0.75s cubic-bezier(0.22, 1, 0.36, 1);
       }
 
       .card-text {
-        flex: 1 0 0;
-        min-width: 0;
+        position: absolute;
+        top: 25px;
+        left: 102px;
+        right: 12px;
         display: flex;
         flex-direction: column;
         gap: 4px;
+        transition: top 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+                    left 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+                    right 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      /* Image grows to a full-width square at the top and the text slides
+         beneath it — both kick off with the slide so the morph happens
+         while the card is still travelling. */
+      .stack.selected .card.is-selected .card-img {
+        top: 12px;
+        left: 12px;
+        width: 376px;
+        height: 376px;
+        transition-delay: 0.3s, 0.3s, 0.3s, 0.3s;
+        transition-duration: 0.9s, 0.9s, 0.9s, 0.9s;
+      }
+
+      .stack.selected .card.is-selected .card-text {
+        top: 400px;
+        left: 12px;
+        right: 12px;
+        transition-delay: 0.3s, 0.3s, 0.3s;
+        transition-duration: 0.9s, 0.9s, 0.9s;
       }
 
       .card-title {
@@ -217,31 +244,17 @@
 
       const N = CARDS.length;
       const CARD_H = 102;        // 78px image + 12px*2 padding
-      const STACK_GAP = 12;      // vertical gap between cards in the clean lineup
+      const STACK_GAP = 12;      // vertical gap between cards in the lineup
       const ROW_PITCH = CARD_H + STACK_GAP;
 
-      // Per-card offsets for the messy pile (hand-tuned to look thrown-down).
-      const MESSY = [
-        { mx: -56, my: -28, mrot: -15 },
-        { mx:  44, my: -38, mrot:  11 },
-        { mx: -22, my:  18, mrot:  -6 },
-        { mx:  36, my:  30, mrot:  14 },
-        { mx: -68, my:   8, mrot:  17 },
-        { mx:  18, my: -10, mrot:  -9 },
-      ];
-
-      // Y-position of the top card in the clean lineup; the selected card snaps here.
+      // Y-position of the top card; the selected card snaps here.
       const TOP_TY = (0 - (N - 1) / 2) * ROW_PITCH;
 
-      function Card({ title, subtitle, img, outline, i, isSelected, onClick }) {
+      function Card({ title, subtitle, img, i, isSelected, onClick }) {
         // Top of array (i=0) gets lowest z; bottom (i=N-1) is highest and sits on top.
         // When a card is selected it must paint above the others as they exit.
         const z = isSelected ? N + 1 : i + 1;
-        // Clean lineup: cards stack vertically around the centerline, no rotation.
-        const tx = 0;
         const ty = (i - (N - 1) / 2) * ROW_PITCH;
-        const rot = 0;
-        const m = MESSY[i] || { mx: 0, my: 0, mrot: 0 };
 
         return h(
           "article",
@@ -250,14 +263,8 @@
             onClick,
             style: {
               "--z": z,
-              "--mx": m.mx + "px",
-              "--my": m.my + "px",
-              "--mrot": m.mrot + "deg",
-              "--tx": tx + "px",
               "--ty": ty + "px",
               "--top-ty": TOP_TY + "px",
-              "--rot": rot + "deg",
-              "--outline": outline,
             },
           },
           h("img", { className: "card-img", src: img, alt: "" }),
@@ -270,16 +277,12 @@
         );
       }
 
-      // States: "messy" (default thrown pile), "spread" (clean vertical lineup),
-      // "selected" (others exit left, picked card rides up to the top slot).
+      // Default: vertical lineup. Click a card → others exit left, picked
+      // card rides up to the top slot and morphs into a tall vertical layout.
       function App() {
-        const [mode, setMode] = useState("messy");
         const [selected, setSelected] = useState(null);
 
-        const reset = () => {
-          setMode("messy");
-          setSelected(null);
-        };
+        const reset = () => setSelected(null);
 
         return h(
           "div",
@@ -289,7 +292,7 @@
           },
           h(
             "div",
-            { className: "stack " + mode },
+            { className: "stack" + (selected !== null ? " selected" : "") },
             CARDS.map((c, i) =>
               h(Card, {
                 key: i,
@@ -298,11 +301,8 @@
                 isSelected: selected === i,
                 onClick: (e) => {
                   e.stopPropagation();
-                  if (mode === "messy") setMode("spread");
-                  else if (mode === "spread") {
-                    setSelected(i);
-                    setMode("selected");
-                  } else reset();
+                  if (selected === null) setSelected(i);
+                  else reset();
                 },
               })
             )
