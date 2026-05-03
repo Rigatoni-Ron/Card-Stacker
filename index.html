@@ -108,11 +108,13 @@
         overflow: hidden;
         transform: translate3d(0, var(--ty), 0);
         transform-origin: 50% 100%;
-        transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
-                    height 0.55s cubic-bezier(0.34, 1.56, 0.64, 1),
+        /* Transform and height share the same duration + easing so the
+           card grows as one unified gesture instead of two staggered ones. */
+        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+                    height 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
                     box-shadow 0.18s ease-out,
                     background 0.18s ease-out,
-                    opacity 0.45s ease-out;
+                    opacity 0.3s ease-out;
         will-change: transform;
         cursor: pointer;
         z-index: var(--z);
@@ -133,16 +135,16 @@
         transition-duration: 0.5s, 0.55s, 0.18s, 0.18s, 0s;
       }
 
-      /* Selected card: slide up and morph taller start together so the
-         whole thing reads as one continuous motion. Kicks off almost
-         immediately, overlapping the others' exit. */
+      /* Selected card: slide up and morph taller in one motion. No
+         delays anywhere on the selected card so transform, height,
+         image scale and text all kick off in the same frame. */
       .stack.selected .card.is-selected {
         transform: translate3d(0, var(--top-ty), 0) rotate(0deg);
         height: 680px;
         opacity: 1;
         pointer-events: auto;
-        transition-delay: 0.05s, 0.05s, 0s, 0s, 0s;
-        transition-duration: 0.7s, 0.55s, 0.18s, 0.18s, 0s;
+        transition-delay: 0s, 0s, 0s, 0s, 0s;
+        transition-duration: 0.4s, 0.4s, 0.18s, 0.18s, 0s;
         box-shadow:
           0 24px 60px -20px rgba(8, 10, 14, 0.55),
           0 8px 24px -10px rgba(8, 10, 14, 0.35);
@@ -172,49 +174,61 @@
         transform: scale(0.2074);
         transform-origin: top left;
         will-change: transform;
-        transition: transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1),
-                    border-radius 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+                    border-radius 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
       }
 
-      /* Text container is anchored at its expanded position and slides
-         into view via transform: translate3d — also fully on the compositor. */
+      /* Text path is split across two nested elements so the Y axis
+         and X axis can be choreographed independently. The visual
+         result is a curved path "around" the image instead of a
+         straight diagonal that would cut underneath it. */
       .card-text {
         position: absolute;
         top: 400px;
         left: 12px;
         width: 376px;
+        /* Outer wrapper owns vertical motion. */
+        transform: translate3d(0, -375px, 0);
+        will-change: transform;
+        transition: transform 0.38s cubic-bezier(0.34, 1.2, 0.64, 1);
+      }
+
+      .card-text-inner {
         display: flex;
         flex-direction: column;
         gap: 4px;
-        transform: translate3d(90px, -375px, 0);
+        /* Inner owns horizontal motion. */
+        transform: translate3d(90px, 0, 0);
         will-change: transform;
-        /* Milder bounce than the card/image — keeps the spring feel but
-           the small overshoot stays inside the 12px padding. */
-        transition: transform 0.5s cubic-bezier(0.34, 1.2, 0.64, 1);
+        transition: transform 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
       }
 
-      /* Selected: scale image up to 376×376 (4.82×) and slide text into
-         place. Border-radius is inverse-scaled so the visible rounding
-         stays close to 8px throughout. Same delay/duration on both so
-         everything moves together. */
+      /* Selected: image grows to 376×376 in lock-step with the card
+         and text, no hard delay. The S-curve easing holds the image
+         small at the very start of the animation (giving the text Y
+         a moment to drop below the image's growing footprint) and
+         then sweeps it to full size, all inside the same window. */
       .stack.selected .card.is-selected .card-img {
         transform: scale(1);
         border-radius: 8px;
-        /* Stagger the grow behind the text so the text glides into its
-           new spot first while the image is still small/upper-left. By
-           the time the image swells up, the text is already settled
-           below it — same "text moves around the image" feel as shrink. */
-        transition-delay: 0.3s, 0.3s;
-        /* Grow uses a smooth ease-out so the image doesn't overshoot
-           past the card's 12px padding. Default rule keeps the bouncy
-           curve, which only fires on the way back (shrink) — image
-           visibly springs smaller and bounces into place inside the card. */
-        transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+        transition-delay: 0s, 0s;
+        transition-timing-function: cubic-bezier(0.7, 0, 0.3, 1);
       }
 
+      /* Text Y drops immediately so it clears the image's growing
+         footprint as one continuous motion with the card expanding. */
       .stack.selected .card.is-selected .card-text {
         transform: translate3d(0, 0, 0);
-        transition-delay: 0.05s;
+        transition-delay: 0s;
+      }
+
+      /* Text X slides left a hair after Y has begun, so the text path
+         curves around the image's right edge instead of diagonally
+         cutting through it. The delay is short enough that, paired
+         with overlapping easings, it still reads as one fluid gesture. */
+      .stack.selected .card.is-selected .card-text-inner {
+        transform: translate3d(0, 0, 0);
+        transition-delay: 0.1s;
       }
 
       .card-title {
@@ -303,8 +317,12 @@
           h(
             "div",
             { className: "card-text" },
-            h("h3", { className: "card-title" }, title),
-            h("p", { className: "card-subtitle" }, subtitle)
+            h(
+              "div",
+              { className: "card-text-inner" },
+              h("h3", { className: "card-title" }, title),
+              h("p", { className: "card-subtitle" }, subtitle)
+            )
           )
         );
       }
