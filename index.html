@@ -200,7 +200,11 @@
       .stack.selected .card.is-selected .card-img {
         transform: scale(1);
         border-radius: 8px;
-        transition-delay: 0.05s, 0.05s;
+        /* Stagger the grow behind the text so the text glides into its
+           new spot first while the image is still small/upper-left. By
+           the time the image swells up, the text is already settled
+           below it — same "text moves around the image" feel as shrink. */
+        transition-delay: 0.3s, 0.3s;
         /* Grow uses a smooth ease-out so the image doesn't overshoot
            past the card's 12px padding. Default rule keeps the bouncy
            curve, which only fires on the way back (shrink) — image
