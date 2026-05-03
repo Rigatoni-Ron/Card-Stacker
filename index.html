@@ -131,8 +131,10 @@
          to fill the gap, then animate back down on reset. */
       .stack.selected .card {
         transform: translate3d(calc(-50vw + 250px), var(--ty-left), 0) rotate(0deg);
-        pointer-events: none;
-        transition-duration: 0.5s, 0.55s, 0.18s, 0.18s, 0s;
+        /* Tucked cards remain clickable so the user can swap selection
+           directly. Durations match the selected card's so the outgoing
+           and incoming card animate on the same clock during a swap. */
+        transition-duration: 0.4s, 0.4s, 0.18s, 0.18s, 0s;
       }
 
       /* Selected card: slide up and morph taller in one motion. No
@@ -352,8 +354,8 @@
                 selectedIdx: selected,
                 onClick: (e) => {
                   e.stopPropagation();
-                  if (selected === null) setSelected(i);
-                  else reset();
+                  if (selected === i) reset();
+                  else setSelected(i);
                 },
               })
             )
