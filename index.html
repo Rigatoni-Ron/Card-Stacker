@@ -142,7 +142,10 @@
          image scale and text all kick off in the same frame. */
       .stack.selected .card.is-selected {
         transform: translate3d(0, var(--top-ty), 0) rotate(0deg);
-        height: 720px;
+        /* Per-card height measured from real content (see Card component)
+           so the card ends 12px below its last element — matching the
+           12px gap above the image. Falls back to 720px pre-measure. */
+        height: var(--expanded-h, 720px);
         opacity: 1;
         pointer-events: auto;
         transition-delay: 0s, 0s, 0s, 0s, 0s;
@@ -178,6 +181,39 @@
         will-change: transform;
         transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
                     border-radius 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+
+      /* Video overlay: shares the image's geometry and scale
+         choreography, layered directly on top. Only the selected
+         card is given a src (set in JS), so collapsed cards load
+         nothing. Starts transparent and fades in once the first
+         frame is ready, so the still image beneath never flashes
+         to black while the clip buffers. */
+      .card-video {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        width: 376px;
+        height: 376px;
+        border-radius: 38.6px;
+        object-fit: cover;
+        display: block;
+        z-index: 2;
+        opacity: 0;
+        transform: scale(0.2074);
+        transform-origin: top left;
+        will-change: transform, opacity;
+        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+                    border-radius 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+                    opacity 0.3s ease-out;
+      }
+      .card-video.is-ready {
+        opacity: 1;
+      }
+      .stack.selected .card.is-selected .card-video {
+        transform: scale(1);
+        border-radius: 8px;
+        transition-timing-function: cubic-bezier(0.7, 0, 0.3, 1);
       }
 
       /* Text path is split across two nested elements so the Y axis
@@ -438,7 +474,7 @@
     </script>
 
     <script type="module">
-      import React, { useState } from "react";
+      import React, { useState, useRef, useEffect } from "react";
       import { createRoot } from "react-dom/client";
 
       const h = React.createElement;
@@ -448,6 +484,7 @@
           title: "EVA Unit-01",
           subtitle: "Test Type",
           img: "images/eva-01.jpg",
+          video: "images/eva-01.mp4",
           accent: "rgb(178, 132, 224)",
           tags: ["Active", "Berserk Capable", "Soul Construct"],
           stats: [
@@ -462,6 +499,7 @@
           title: "EVA Unit-02",
           subtitle: "Production Model",
           img: "images/eva-02.jpg",
+          video: "images/eva-02.mp4",
           accent: "rgb(236, 96, 82)",
           tags: ["Active", "Combat Class", "S2 Compatible"],
           stats: [
@@ -476,6 +514,7 @@
           title: "EVA Unit-08",
           subtitle: "Improved Type 4β",
           img: "images/eva-08.jpg",
+          video: "images/eva-08.mp4",
           accent: "rgb(232, 108, 168)",
           tags: ["Active", "High Mobility", "Chainsaw Config"],
           stats: [
@@ -490,6 +529,7 @@
           title: "EVA Prototype",
           subtitle: "Pre-Production Frame",
           img: "images/eva-prototype.jpg",
+          video: "images/eva-prototype.mp4",
           accent: "rgb(108, 148, 224)",
           tags: ["Restricted", "Prototype Frame", "Unverified"],
           stats: [
@@ -504,6 +544,7 @@
           title: "EVA Unit-00",
           subtitle: "Prototype",
           img: "images/eva-00.jpg",
+          video: "images/eva-00.mp4",
           accent: "rgb(224, 166, 76)",
           tags: ["Active", "First Activation", "Stable"],
           stats: [
@@ -518,6 +559,7 @@
           title: "EVA Mark.06",
           subtitle: "Lunar Construct",
           img: "images/eva-mark-06.jpg",
+          video: "images/eva-mark-06.mp4",
           accent: "rgb(140, 144, 156)",
           tags: ["Operational", "Seed of Life", "Apostle Class"],
           stats: [
@@ -539,7 +581,7 @@
       const TOP_TY = (0 - (N - 1) / 2) * ROW_PITCH;
 
       function Card({
-        title, subtitle, img, accent, tags, stats, pilot, desc,
+        title, subtitle, img, video, accent, tags, stats, pilot, desc,
         i, isSelected, selectedIdx, onClick,
       }) {
         // Top of array (i=0) gets lowest z; bottom (i=N-1) is highest and sits on top.
@@ -550,6 +592,45 @@
         // it left behind. Cards above the selection stay put.
         const shiftUp = selectedIdx !== null && !isSelected && i > selectedIdx;
         const tyLeft = shiftUp ? ty - ROW_PITCH : ty;
+
+        // Lazy video: the clip's src is only attached the first time
+        // this card is selected, so the collapsed stack downloads nothing.
+        // On deselect we pause, drop the source, and reset readiness so
+        // the memory is freed and the still image takes over again.
+        const videoRef = useRef(null);
+        const [videoReady, setVideoReady] = useState(false);
+        useEffect(() => {
+          const v = videoRef.current;
+          if (!v) return;
+          if (isSelected) {
+            if (v.getAttribute("src") !== video) v.setAttribute("src", video);
+            v.currentTime = 0;
+            const p = v.play();
+            if (p && p.catch) p.catch(() => {});
+          } else {
+            v.pause();
+            v.removeAttribute("src");
+            v.load();
+            setVideoReady(false);
+          }
+        }, [isSelected, video]);
+
+        // The extra-content block is absolutely positioned, so the card
+        // can't auto-size to it. Measure where it actually ends and set
+        // the expanded height to leave a 12px bottom margin matching the
+        // top padding. Re-measure after web fonts load, since text wrap
+        // (and therefore the block's height) can shift once Inter swaps in.
+        const extraRef = useRef(null);
+        const [expandedH, setExpandedH] = useState(null);
+        useEffect(() => {
+          const el = extraRef.current;
+          if (!el) return;
+          const measure = () => setExpandedH(el.offsetTop + el.offsetHeight + 12);
+          measure();
+          if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(measure);
+          }
+        }, []);
 
         const statsEl = h(
           "div",
@@ -593,9 +674,19 @@
               "--ty-left": tyLeft + "px",
               "--top-ty": TOP_TY + "px",
               "--accent": accent,
+              "--expanded-h": expandedH ? expandedH + "px" : undefined,
             },
           },
           h("img", { className: "card-img", src: img, alt: "" }),
+          h("video", {
+            className: "card-video" + (videoReady ? " is-ready" : ""),
+            ref: videoRef,
+            muted: true,
+            loop: true,
+            playsInline: true,
+            preload: "none",
+            onPlaying: () => setVideoReady(true),
+          }),
           h(
             "div",
             { className: "card-text" },
@@ -608,7 +699,7 @@
           ),
           h(
             "div",
-            { className: "card-extra" },
+            { className: "card-extra", ref: extraRef },
             pilotEl,
             h("p", { className: "card-desc" }, desc),
             statsEl
