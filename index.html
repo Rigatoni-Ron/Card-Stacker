@@ -142,7 +142,7 @@
          image scale and text all kick off in the same frame. */
       .stack.selected .card.is-selected {
         transform: translate3d(0, var(--top-ty), 0) rotate(0deg);
-        height: 680px;
+        height: 720px;
         opacity: 1;
         pointer-events: auto;
         transition-delay: 0s, 0s, 0s, 0s, 0s;
@@ -250,6 +250,179 @@
         line-height: 21px;
         color: var(--card-subtitle);
       }
+
+      /* ── Expanded-only content ──────────────────────────────
+         Sits below the title at a fixed position inside the card.
+         The card's overflow:hidden naturally clips this until the
+         card has grown tall enough to reveal it. Each child fades
+         and lifts in with a staggered delay so the section reads
+         as one cascade rather than a single block pop. */
+      .card-extra {
+        position: absolute;
+        top: 476px;
+        left: 16px;
+        right: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        pointer-events: none;
+      }
+
+      /* Default (collapsed / non-selected): children are hidden.
+         The very short opacity transition handles the close path —
+         a snap would leave one jarring frame where the card is
+         still tall enough to show the content at full opacity. */
+      .card-extra > * {
+        opacity: 0;
+        transform: translateY(10px);
+        transition: opacity 0.1s ease-out, transform 0s;
+      }
+
+      /* Selected: each child fades and lifts into place. Delays
+         start ~0.2s in so the content arrives as the card's
+         growing height first reveals this region. */
+      .stack.selected .card.is-selected .card-extra {
+        pointer-events: auto;
+      }
+      .stack.selected .card.is-selected .card-extra > * {
+        opacity: 1;
+        transform: translateY(0);
+        transition: opacity 0.35s ease-out,
+                    transform 0.45s cubic-bezier(0.34, 1.2, 0.64, 1);
+      }
+      .stack.selected .card.is-selected .card-extra > *:nth-child(1) { transition-delay: 0.18s; }
+      .stack.selected .card.is-selected .card-extra > *:nth-child(2) { transition-delay: 0.24s; }
+      .stack.selected .card.is-selected .card-extra > *:nth-child(3) { transition-delay: 0.30s; }
+      .stack.selected .card.is-selected .card-extra > *:nth-child(4) { transition-delay: 0.36s; }
+
+      /* Tags row: small status chips. One chip is keyed to the
+         card's --accent color so each EVA has a unique visual mark. */
+      .card-tags {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .card-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.72);
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+      }
+      .card-tag.accent {
+        color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 14%, transparent);
+        border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+      }
+      .card-tag .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: currentColor;
+      }
+
+      /* Stats: three-column data panel. 1px gap + dark child bg
+         on lighter parent gives the inset divider look without
+         actual borders between cells. */
+      .card-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .card-stat {
+        background: rgba(0, 0, 0, 0.28);
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .card-stat .label {
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.42);
+      }
+      .card-stat .value {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--card-title);
+        font-variant-numeric: tabular-nums;
+      }
+      .card-stat .unit {
+        font-size: 11px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.4);
+        margin-left: 2px;
+      }
+
+      /* Pilot row: avatar + name + designation code. The avatar
+         picks up --accent so it reads as part of the EVA's identity. */
+      .card-pilot {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+      }
+      .card-pilot .avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        font-size: 13px;
+        font-weight: 600;
+        color: #111;
+        background: var(--accent);
+        flex-shrink: 0;
+      }
+      .card-pilot .info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex: 1;
+        min-width: 0;
+      }
+      .card-pilot .name {
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 1.2;
+        color: var(--card-title);
+      }
+      .card-pilot .role {
+        font-size: 11px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--card-subtitle);
+      }
+      .card-pilot .code {
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        color: rgba(255, 255, 255, 0.4);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .card-desc {
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.55;
+        color: rgba(255, 255, 255, 0.62);
+      }
     </style>
   </head>
   <body>
@@ -271,18 +444,90 @@
       const h = React.createElement;
 
       const CARDS = [
-        // purple EVA-01 → lilac outline
-        { title: "Header of card", subtitle: "Subtitle", img: "images/eva-01.jpg",        outline: "rgba(157, 102, 217, 0.95)" },
-        // red EVA-02 → red outline
-        { title: "Header of card", subtitle: "Subtitle", img: "images/eva-02.jpg",        outline: "rgba(228, 79, 64, 0.95)" },
-        // pink chainsaw EVA-08 → deep pink outline
-        { title: "Header of card", subtitle: "Subtitle", img: "images/eva-08.jpg",        outline: "rgba(224, 84, 150, 0.95)" },
-        // blue Prototype EVA → blue outline
-        { title: "Header of card", subtitle: "Subtitle", img: "images/eva-prototype.jpg", outline: "rgba(76, 122, 214, 0.95)" },
-        // white/orange EVA-00 → burnt yellow outline
-        { title: "Header of card", subtitle: "Subtitle", img: "images/eva-00.jpg",        outline: "rgba(214, 152, 53, 0.95)" },
-        // black/red EVA Mark-06 → dark grey outline
-        { title: "Header of card", subtitle: "Subtitle", img: "images/eva-mark-06.jpg",   outline: "rgba(96, 100, 112, 0.95)" },
+        {
+          title: "EVA Unit-01",
+          subtitle: "Test Type",
+          img: "images/eva-01.jpg",
+          accent: "rgb(178, 132, 224)",
+          tags: ["Active", "Berserk Capable", "Soul Construct"],
+          stats: [
+            { label: "Height", value: "40", unit: "m" },
+            { label: "Weight", value: "700", unit: "t" },
+            { label: "Sync", value: "41.3", unit: "%" },
+          ],
+          pilot: { name: "Shinji Ikari", role: "3rd Child · Pilot", initial: "S", code: "P-01" },
+          desc: "Designated for synchronization with the 3rd Child. Soul construct integration enables uncontrolled berserker states under extreme duress.",
+        },
+        {
+          title: "EVA Unit-02",
+          subtitle: "Production Model",
+          img: "images/eva-02.jpg",
+          accent: "rgb(236, 96, 82)",
+          tags: ["Active", "Combat Class", "S2 Compatible"],
+          stats: [
+            { label: "Height", value: "41", unit: "m" },
+            { label: "Weight", value: "740", unit: "t" },
+            { label: "Sync", value: "67.5", unit: "%" },
+          ],
+          pilot: { name: "Asuka L. Soryu", role: "2nd Child · Pilot", initial: "A", code: "P-02" },
+          desc: "First true Production Model. Optimized for offensive operations across terrestrial, aquatic, and orbital theaters.",
+        },
+        {
+          title: "EVA Unit-08",
+          subtitle: "Improved Type 4β",
+          img: "images/eva-08.jpg",
+          accent: "rgb(232, 108, 168)",
+          tags: ["Active", "High Mobility", "Chainsaw Config"],
+          stats: [
+            { label: "Height", value: "80", unit: "m" },
+            { label: "Weight", value: "960", unit: "t" },
+            { label: "Sync", value: "89.0", unit: "%" },
+          ],
+          pilot: { name: "Mari Makinami", role: "Euro-NERV · Pilot", initial: "M", code: "P-08" },
+          desc: "High-mobility frame deployed for vector-aligned strikes. Chainsaw configuration is tuned for sustained close-quarters engagements.",
+        },
+        {
+          title: "EVA Prototype",
+          subtitle: "Pre-Production Frame",
+          img: "images/eva-prototype.jpg",
+          accent: "rgb(108, 148, 224)",
+          tags: ["Restricted", "Prototype Frame", "Unverified"],
+          stats: [
+            { label: "Height", value: "38", unit: "m" },
+            { label: "Weight", value: "690", unit: "t" },
+            { label: "Sync", value: "—", unit: "" },
+          ],
+          pilot: { name: "Unassigned", role: "NERV-1 · Sealed", initial: "?", code: "P-XX" },
+          desc: "Pre-production test frame. Synchronization protocols are unverified for human operation. Records sealed under MAGI Directive 9.",
+        },
+        {
+          title: "EVA Unit-00",
+          subtitle: "Prototype",
+          img: "images/eva-00.jpg",
+          accent: "rgb(224, 166, 76)",
+          tags: ["Active", "First Activation", "Stable"],
+          stats: [
+            { label: "Height", value: "39", unit: "m" },
+            { label: "Weight", value: "685", unit: "t" },
+            { label: "Sync", value: "38.7", unit: "%" },
+          ],
+          pilot: { name: "Rei Ayanami", role: "1st Child · Pilot", initial: "R", code: "P-00" },
+          desc: "Prototype Unit recovered from the initial activation incident. Operating below specification but stable under controlled engagement.",
+        },
+        {
+          title: "EVA Mark.06",
+          subtitle: "Lunar Construct",
+          img: "images/eva-mark-06.jpg",
+          accent: "rgb(140, 144, 156)",
+          tags: ["Operational", "Seed of Life", "Apostle Class"],
+          stats: [
+            { label: "Height", value: "60", unit: "m" },
+            { label: "Weight", value: "870", unit: "t" },
+            { label: "Sync", value: "100", unit: "%" },
+          ],
+          pilot: { name: "Kaworu Nagisa", role: "SEELE · Pilot", initial: "K", code: "P-06" },
+          desc: "Constructed in lunar orbit using a recovered Seed of Life. Outclasses production-line units by an order of magnitude.",
+        },
       ];
 
       const N = CARDS.length;
@@ -293,7 +538,10 @@
       // Y-position of the top card; the selected card snaps here.
       const TOP_TY = (0 - (N - 1) / 2) * ROW_PITCH;
 
-      function Card({ title, subtitle, img, i, isSelected, selectedIdx, onClick }) {
+      function Card({
+        title, subtitle, img, accent, tags, stats, pilot, desc,
+        i, isSelected, selectedIdx, onClick,
+      }) {
         // Top of array (i=0) gets lowest z; bottom (i=N-1) is highest and sits on top.
         // When a card is selected it must paint above the others as they exit.
         const z = isSelected ? N + 1 : i + 1;
@@ -302,6 +550,37 @@
         // it left behind. Cards above the selection stay put.
         const shiftUp = selectedIdx !== null && !isSelected && i > selectedIdx;
         const tyLeft = shiftUp ? ty - ROW_PITCH : ty;
+
+        const statsEl = h(
+          "div",
+          { className: "card-stats" },
+          stats.map((s, si) =>
+            h(
+              "div",
+              { key: si, className: "card-stat" },
+              h("span", { className: "label" }, s.label),
+              h(
+                "span",
+                { className: "value" },
+                s.value,
+                s.unit ? h("span", { className: "unit" }, s.unit) : null
+              )
+            )
+          )
+        );
+
+        const pilotEl = h(
+          "div",
+          { className: "card-pilot" },
+          h("div", { className: "avatar" }, pilot.initial),
+          h(
+            "div",
+            { className: "info" },
+            h("div", { className: "name" }, pilot.name),
+            h("div", { className: "role" }, pilot.role)
+          ),
+          h("div", { className: "code" }, pilot.code)
+        );
 
         return h(
           "article",
@@ -313,6 +592,7 @@
               "--ty": ty + "px",
               "--ty-left": tyLeft + "px",
               "--top-ty": TOP_TY + "px",
+              "--accent": accent,
             },
           },
           h("img", { className: "card-img", src: img, alt: "" }),
@@ -325,6 +605,13 @@
               h("h3", { className: "card-title" }, title),
               h("p", { className: "card-subtitle" }, subtitle)
             )
+          ),
+          h(
+            "div",
+            { className: "card-extra" },
+            pilotEl,
+            h("p", { className: "card-desc" }, desc),
+            statsEl
           )
         );
       }
