@@ -303,9 +303,9 @@
       .stack.selected .card.is-selected .card-extra > *:nth-child(3) { transition-delay: 0.30s; }
       .stack.selected .card.is-selected .card-extra > *:nth-child(4) { transition-delay: 0.36s; }
 
-      /* Accepted-collateral line: a second body-copy paragraph below
-         the description with a slightly muted prefix. Reads as a
-         labeled sales-deck data point rather than a visual chip row. */
+      /* Accepted-collateral line: a body-copy paragraph with a
+         slightly muted prefix. Reads as a labeled sales-deck data
+         point rather than a visual chip row. */
       .card-collateral {
         margin: 0;
         font-size: 13px;
@@ -401,12 +401,6 @@
         font-variant-numeric: tabular-nums;
       }
 
-      .card-desc {
-        margin: 0;
-        font-size: 13px;
-        line-height: 1.55;
-        color: rgba(255, 255, 255, 0.62);
-      }
     </style>
   </head>
   <body>
@@ -440,7 +434,6 @@
             { label: "Time to Fund", value: "5", unit: "days" },
           ],
           lender: { name: "Maple Finance", role: "Permissioned · Est. 2021", initial: "M", code: "L-01" },
-          desc: "Institutional lending protocol for accredited borrowers. Permissioned pools backed by underwritten credit and real-world cash management.",
         },
         {
           title: "Spark Protocol",
@@ -454,7 +447,6 @@
             { label: "Time to Fund", value: "Instant", unit: "" },
           ],
           lender: { name: "Spark Protocol", role: "Permissionless · Ethereum", initial: "S", code: "L-02" },
-          desc: "DAI/USDS lending market built on MakerDAO infrastructure. Deep liquidity and tight rates against blue-chip and RWA-backed collateral.",
         },
         {
           title: "Coinbase Prime",
@@ -468,7 +460,6 @@
             { label: "Time to Fund", value: "3", unit: "days" },
           ],
           lender: { name: "Coinbase Prime", role: "Institutional · NASDAQ: COIN", initial: "C", code: "L-03" },
-          desc: "Prime financing desk for institutional clients. KYC-gated facilities against blue-chip crypto and stablecoin collateral.",
         },
         {
           title: "Kamino",
@@ -482,7 +473,6 @@
             { label: "Time to Fund", value: "Instant", unit: "" },
           ],
           lender: { name: "Kamino", role: "Permissionless · Solana", initial: "K", code: "L-04" },
-          desc: "Solana-native liquidity markets with concentrated lending vaults across LSTs, blue-chip alts, and ecosystem tokens.",
         },
         {
           title: "Morpho",
@@ -496,7 +486,6 @@
             { label: "Time to Fund", value: "Instant", unit: "" },
           ],
           lender: { name: "Morpho", role: "Permissionless · Ethereum & Base", initial: "M", code: "L-05" },
-          desc: "Modular lending stack with isolated markets and curated vaults. Permissionless deployment of custom risk-tuned collateral pairs.",
         },
         {
           title: "Aave",
@@ -510,7 +499,6 @@
             { label: "Time to Fund", value: "Instant", unit: "" },
           ],
           lender: { name: "Aave", role: "Permissionless · Multi-chain", initial: "A", code: "L-06" },
-          desc: "The largest decentralized money market by TVL. Broad collateral support across Ethereum, Base, Arbitrum, and other major chains.",
         },
       ];
 
@@ -523,7 +511,7 @@
       const TOP_TY = (0 - (N - 1) / 2) * ROW_PITCH;
 
       function Card({
-        title, subtitle, ticker, accent, collateral, stats, lender, desc,
+        title, subtitle, ticker, accent, collateral, stats, lender,
         i, isSelected, selectedIdx, onClick,
       }) {
         // Top of array (i=0) gets lowest z; bottom (i=N-1) is highest and sits on top.
@@ -584,8 +572,7 @@
         );
 
         // Accepted-collateral line: a body-copy paragraph with a muted
-        // prefix label. Reads alongside the description rather than as
-        // a separate visual region.
+        // prefix label, sized as a single line of structured data.
         const collateralEl = h(
           "p",
           { className: "card-collateral" },
@@ -622,7 +609,6 @@
             "div",
             { className: "card-extra", ref: extraRef },
             lenderEl,
-            h("p", { className: "card-desc" }, desc),
             collateralEl,
             statsEl
           )
