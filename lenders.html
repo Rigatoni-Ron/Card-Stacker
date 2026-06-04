@@ -10,6 +10,10 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=block"
+      rel="stylesheet"
+    />
     <style>
       :root {
         --canvas: #d6d9dd;
@@ -155,8 +159,10 @@
           0 8px 24px -10px rgba(8, 10, 14, 0.35);
       }
 
-      /* Hover: card surface brightens. */
-      .card:hover {
+      /* Hover: card surface brightens — but not while the cursor is
+         over the linkout button, so its own hover state reads as the
+         only interactive element under the pointer. */
+      .card:hover:not(:has(.card-linkout:hover)) {
         background: #262626;
       }
 
@@ -209,7 +215,12 @@
         top: 400px;
         left: 12px;
         width: 376px;
-        /* Outer wrapper owns vertical motion. */
+        /* Outer wrapper owns vertical motion. Flex row so the linkout
+           button sits to the right of the title/subtitle column and
+           rides the same Y track in both collapsed and expanded states. */
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
         transform: translate3d(0, -375px, 0);
         will-change: transform;
         transition: transform 0.38s cubic-bezier(0.34, 1.2, 0.64, 1);
@@ -257,6 +268,50 @@
         font-size: 14px;
         line-height: 21px;
         color: var(--card-subtitle);
+      }
+
+      /* Material Symbols icon font reset. Without these declarations
+         the browser briefly renders the ligature name ("arrow_outward")
+         as text before the font swap completes. */
+      .material-symbols-outlined {
+        font-family: "Material Symbols Outlined";
+        font-weight: normal;
+        font-style: normal;
+        font-size: 16px;
+        line-height: 1;
+        letter-spacing: normal;
+        text-transform: none;
+        display: inline-block;
+        white-space: nowrap;
+        word-wrap: normal;
+        direction: ltr;
+        -webkit-font-feature-settings: "liga";
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* Linkout button: 16px icon with 8px padding all around (so
+         a 32×32 target), 8px radius, 1px light border, transparent
+         fill until hover. Sits to the right of the title text in both
+         collapsed and expanded states by virtue of living inside
+         .card-text (which already owns the Y choreography). */
+      .card-linkout {
+        flex-shrink: 0;
+        width: 32px;
+        height: 32px;
+        display: grid;
+        place-items: center;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 8px;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.75);
+        text-decoration: none;
+        transition: background 0.18s ease, border-color 0.18s ease,
+                    color 0.18s ease;
+      }
+      .card-linkout:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.32);
+        color: rgba(255, 255, 255, 0.95);
       }
 
       /* ── Expanded-only content ──────────────────────────────
@@ -379,6 +434,7 @@
         {
           title: "Maple Finance",
           subtitle: "Institutional Credit",
+          url: "https://maple.finance",
           ticker: "MP",
           accent: "rgb(67, 162, 119)",
           collateral: "blue chip, stables, RWAs, T-Bills",
@@ -391,6 +447,7 @@
         {
           title: "Spark Protocol",
           subtitle: "Permissionless Lending",
+          url: "https://spark.fi",
           ticker: "SP",
           accent: "rgb(247, 138, 84)",
           collateral: "blue chip, LSTs, stables, RWAs",
@@ -403,6 +460,7 @@
         {
           title: "Coinbase Prime",
           subtitle: "Institutional Prime",
+          url: "https://prime.coinbase.com",
           ticker: "CB",
           accent: "rgb(54, 110, 244)",
           collateral: "blue chip, stables",
@@ -415,6 +473,7 @@
         {
           title: "Kamino",
           subtitle: "Solana Liquidity Markets",
+          url: "https://kamino.finance",
           ticker: "KM",
           accent: "rgb(60, 196, 184)",
           collateral: "SOL, LSTs, stables, alt coins",
@@ -427,6 +486,7 @@
         {
           title: "Morpho",
           subtitle: "Modular Lending",
+          url: "https://morpho.org",
           ticker: "MO",
           accent: "rgb(56, 130, 248)",
           collateral: "blue chip, wrapped assets, LSTs, stables, RWAs",
@@ -439,6 +499,7 @@
         {
           title: "Aave",
           subtitle: "Multi-Chain Money Market",
+          url: "https://aave.com",
           ticker: "AV",
           accent: "rgb(177, 100, 213)",
           collateral: "blue chip, wrapped assets, LSTs, stables, alt coins",
@@ -459,7 +520,7 @@
       const TOP_TY = (0 - (N - 1) / 2) * ROW_PITCH;
 
       function Card({
-        title, subtitle, ticker, accent, collateral, stats,
+        title, subtitle, url, ticker, accent, collateral, stats,
         i, isSelected, selectedIdx, onClick,
       }) {
         // Top of array (i=0) gets lowest z; bottom (i=N-1) is highest and sits on top.
@@ -538,6 +599,20 @@
               { className: "card-text-inner" },
               h("h3", { className: "card-title" }, title),
               h("p", { className: "card-subtitle" }, subtitle)
+            ),
+            h(
+              "a",
+              {
+                className: "card-linkout",
+                href: url,
+                target: "_blank",
+                rel: "noopener noreferrer",
+                "aria-label": "Visit " + title,
+                // Stop the card's onClick so opening the link doesn't
+                // also toggle the expand/collapse state of the card.
+                onClick: (e) => e.stopPropagation(),
+              },
+              h("span", { className: "material-symbols-outlined" }, "arrow_outward")
             )
           ),
           h(
