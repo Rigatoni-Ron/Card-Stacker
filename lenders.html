@@ -355,52 +355,6 @@
         margin-left: 2px;
       }
 
-      /* Lender row: avatar + name + designation code. The avatar
-         picks up --accent so it reads as part of the lender's brand. */
-      .card-lender {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-      .card-lender .avatar {
-        width: 32px;
-        height: 32px;
-        border-radius: 999px;
-        display: grid;
-        place-items: center;
-        font-size: 13px;
-        font-weight: 600;
-        color: #111;
-        background: var(--accent);
-        flex-shrink: 0;
-      }
-      .card-lender .info {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        flex: 1;
-        min-width: 0;
-      }
-      .card-lender .name {
-        font-size: 14px;
-        font-weight: 500;
-        line-height: 1.2;
-        color: var(--card-title);
-      }
-      .card-lender .role {
-        font-size: 11px;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-        color: var(--card-subtitle);
-      }
-      .card-lender .code {
-        font-size: 10px;
-        font-weight: 600;
-        letter-spacing: 0.12em;
-        color: rgba(255, 255, 255, 0.4);
-        font-variant-numeric: tabular-nums;
-      }
-
     </style>
   </head>
   <body>
@@ -433,7 +387,6 @@
             { label: "Max LTV", value: "70", unit: "%" },
             { label: "Time to Fund", value: "5", unit: "days" },
           ],
-          lender: { name: "Maple Finance", role: "Permissioned · Est. 2021", initial: "M", code: "L-01" },
         },
         {
           title: "Spark Protocol",
@@ -446,7 +399,6 @@
             { label: "Max LTV", value: "86", unit: "%" },
             { label: "Time to Fund", value: "Instant", unit: "" },
           ],
-          lender: { name: "Spark Protocol", role: "Permissionless · Ethereum", initial: "S", code: "L-02" },
         },
         {
           title: "Coinbase Prime",
@@ -459,7 +411,6 @@
             { label: "Max LTV", value: "60", unit: "%" },
             { label: "Time to Fund", value: "3", unit: "days" },
           ],
-          lender: { name: "Coinbase Prime", role: "Institutional · NASDAQ: COIN", initial: "C", code: "L-03" },
         },
         {
           title: "Kamino",
@@ -472,7 +423,6 @@
             { label: "Max LTV", value: "80", unit: "%" },
             { label: "Time to Fund", value: "Instant", unit: "" },
           ],
-          lender: { name: "Kamino", role: "Permissionless · Solana", initial: "K", code: "L-04" },
         },
         {
           title: "Morpho",
@@ -485,7 +435,6 @@
             { label: "Max LTV", value: "86", unit: "%" },
             { label: "Time to Fund", value: "Instant", unit: "" },
           ],
-          lender: { name: "Morpho", role: "Permissionless · Ethereum & Base", initial: "M", code: "L-05" },
         },
         {
           title: "Aave",
@@ -498,7 +447,6 @@
             { label: "Max LTV", value: "82.5", unit: "%" },
             { label: "Time to Fund", value: "Instant", unit: "" },
           ],
-          lender: { name: "Aave", role: "Permissionless · Multi-chain", initial: "A", code: "L-06" },
         },
       ];
 
@@ -511,7 +459,7 @@
       const TOP_TY = (0 - (N - 1) / 2) * ROW_PITCH;
 
       function Card({
-        title, subtitle, ticker, accent, collateral, stats, lender,
+        title, subtitle, ticker, accent, collateral, stats,
         i, isSelected, selectedIdx, onClick,
       }) {
         // Top of array (i=0) gets lowest z; bottom (i=N-1) is highest and sits on top.
@@ -558,19 +506,6 @@
           )
         );
 
-        const lenderEl = h(
-          "div",
-          { className: "card-lender" },
-          h("div", { className: "avatar" }, lender.initial),
-          h(
-            "div",
-            { className: "info" },
-            h("div", { className: "name" }, lender.name),
-            h("div", { className: "role" }, lender.role)
-          ),
-          h("div", { className: "code" }, lender.code)
-        );
-
         // Accepted-collateral line: a body-copy paragraph with a muted
         // prefix label, sized as a single line of structured data.
         const collateralEl = h(
@@ -608,7 +543,6 @@
           h(
             "div",
             { className: "card-extra", ref: extraRef },
-            lenderEl,
             collateralEl,
             statsEl
           )
