@@ -217,13 +217,16 @@
         width: 100%;
         height: 100%;
         display: block;
-        filter: saturate(0);
+        /* Per-card --grey-brightness equalises the greyscale luminance
+           across cards so warm and cool accents read at the same grey
+           when collapsed. Falls back to 1 if the var isn't set. */
+        filter: saturate(0) brightness(var(--grey-brightness, 1));
         transition: filter 0.4s ease-in;
       }
       /* Active = selected OR hovered (set from JS). Both states bring
          the shader into full color and start the rAF animation. */
       .card-shader.is-active {
-        filter: saturate(1);
+        filter: saturate(1) brightness(1);
         transition-timing-function: ease-out;
       }
       /* Ticker text sits above the canvas via z-index. */
@@ -826,6 +829,11 @@
         });
       }
 
+      // sRGB luminance of Chainlink's accent — the target greyscale
+      // level that every collapsed shader is normalised to so all
+      // greyscale frames read at the same brightness.
+      const TARGET_GREY_LUMINANCE = 95;
+
       function Card({
         title, subtitle, url, ticker, icon, accent, collateral, stats, shaderVariant,
         i, isSelected, selectedIdx, onClick,
@@ -834,6 +842,16 @@
         // When a card is selected it must paint above the others as they exit.
         const z = isSelected ? N + 1 : i + 1;
         const ty = (i - (N - 1) / 2) * ROW_PITCH;
+
+        // Per-card brightness factor applied to the greyscale state.
+        // A warm accent (Maple/Spark) desaturates to a brighter grey
+        // than a cool one (Chainlink), so we scale by the ratio of
+        // luminances to pin every collapsed frame to the same level.
+        const accMatch = accent.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+        const accentLum = accMatch
+          ? 0.299 * +accMatch[1] + 0.587 * +accMatch[2] + 0.114 * +accMatch[3]
+          : 128;
+        const greyBrightness = (TARGET_GREY_LUMINANCE / accentLum).toFixed(3);
         // Cards below the selected one shift up by a slot to fill the gap
         // it left behind. Cards above the selection stay put.
         const shiftUp = selectedIdx !== null && !isSelected && i > selectedIdx;
@@ -897,6 +915,7 @@
               "--ty-left": tyLeft + "px",
               "--top-ty": TOP_TY + "px",
               "--accent": accent,
+              "--grey-brightness": greyBrightness,
               "--expanded-h": expandedH ? expandedH + "px" : undefined,
             },
           },
