@@ -616,9 +616,8 @@
           float y = (uv.y + warp) * 70.0;
           float d = abs(fract(y) - 0.5) * 2.0;
           float intensity = pow(1.0 - smoothstep(0.0, 0.5, d), 2.0);
-          // Brightness-only gradient so the hue stays orange and just
-          // darkens toward the right edge (no channel shift to yellow).
-          vec3 grad = mix(uAccent, uAccent * 0.45, uv.x);
+          intensity *= 1.0 - uv.y * 0.55;
+          vec3 grad = uAccent;
           return mix(uAccent * 0.06, grad, intensity);
         }
 
@@ -632,6 +631,7 @@
           float radial = (r + warp) * 70.0;
           float d = abs(fract(radial) - 0.5) * 2.0;
           float intensity = pow(1.0 - smoothstep(0.0, 0.5, d), 2.0);
+          intensity *= 1.0 - uv.y * 0.55;
           vec3 grad = mix(uAccent * 1.15, uAccent * vec3(1.0, 1.1, 0.8), r * 1.8);
           return mix(uAccent * 0.06, grad, clamp(intensity, 0.0, 1.0));
         }
@@ -644,6 +644,7 @@
           float y = (uv.y + warp) * 70.0;
           float d = abs(fract(y) - 0.5) * 2.0;
           float intensity = pow(1.0 - smoothstep(0.0, 0.5, d), 2.0);
+          intensity *= 1.0 - uv.y * 0.55;
           vec3 grad = mix(uAccent * 0.9, uAccent * 1.15, uv.x);
           return mix(uAccent * 0.06, grad, intensity);
         }
@@ -673,6 +674,7 @@
           float dB = abs(fract(xB) - 0.5) * 2.0;
           float intB = pow(1.0 - smoothstep(0.0, 0.5, dB), 2.0);
           float intensity = max(intA, intB) * 0.75 + min(intA, intB) * 0.35;
+          intensity *= 1.0 - uv.y * 0.55;
           vec3 grad = mix(uAccent, uAccent * vec3(0.85, 1.1, 1.2), uv.x);
           return mix(uAccent * 0.05, grad, intensity);
         }
@@ -685,6 +687,7 @@
           float radial = r * 70.0 - t * 1.8;
           float d = abs(fract(radial) - 0.5) * 2.0;
           float intensity = pow(1.0 - smoothstep(0.0, 0.5, d), 2.0);
+          intensity *= 1.0 - uv.y * 0.55;
           vec3 c1 = uAccent;
           vec3 c2 = uAccent * vec3(1.0, 0.8, 1.2);
           vec3 grad = mix(c1, c2, 0.5 + 0.5 * sin(t * 0.7));
