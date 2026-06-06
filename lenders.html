@@ -229,6 +229,16 @@
         position: relative;
         z-index: 1;
       }
+      /* Icon variant of the hero brand mark — sized to occupy a
+         comfortable ~60% of the tile so it reads as the primary
+         identity in both collapsed and expanded states. */
+      .card-hero-icon {
+        position: relative;
+        z-index: 1;
+        width: 220px;
+        height: 220px;
+        display: block;
+      }
 
       /* Text path is split across two nested elements so the Y axis
          and X axis can be choreographed independently. The visual
@@ -460,6 +470,7 @@
           subtitle: "Institutional Credit",
           url: "https://maple.finance",
           ticker: "MP",
+          icon: "icons/maple.svg",
           shaderVariant: 0,
           accent: "rgb(67, 162, 119)",
           collateral: "blue chip, stables, RWAs, T-Bills",
@@ -474,6 +485,7 @@
           subtitle: "Permissionless Lending",
           url: "https://spark.fi",
           ticker: "SP",
+          icon: "icons/spark.svg",
           shaderVariant: 1,
           accent: "rgb(247, 138, 84)",
           collateral: "blue chip, LSTs, stables, RWAs",
@@ -488,6 +500,7 @@
           subtitle: "Institutional Prime",
           url: "https://prime.coinbase.com",
           ticker: "CB",
+          icon: "icons/coinbase.svg",
           shaderVariant: 2,
           accent: "rgb(54, 110, 244)",
           collateral: "blue chip, stables",
@@ -498,17 +511,18 @@
           ],
         },
         {
-          title: "Kamino",
-          subtitle: "Solana Liquidity Markets",
-          url: "https://kamino.finance",
-          ticker: "KM",
+          title: "Chainlink",
+          subtitle: "Cross-Chain Liquidity",
+          url: "https://chain.link",
+          ticker: "CL",
+          icon: "icons/chainlink.svg",
           shaderVariant: 3,
-          accent: "rgb(60, 196, 184)",
-          collateral: "SOL, LSTs, stables, alt coins",
+          accent: "rgb(46, 95, 224)",
+          collateral: "blue chip, wrapped assets, stables, RWAs",
           stats: [
-            { label: "Min Loan", value: "—", unit: "" },
-            { label: "Max LTV", value: "80", unit: "%" },
-            { label: "Time to Fund", value: "Instant", unit: "" },
+            { label: "Min Loan", value: "$500", unit: "K" },
+            { label: "Max LTV", value: "75", unit: "%" },
+            { label: "Time to Fund", value: "3", unit: "days" },
           ],
         },
         {
@@ -516,6 +530,7 @@
           subtitle: "Modular Lending",
           url: "https://morpho.org",
           ticker: "MO",
+          icon: "icons/morpho.svg",
           shaderVariant: 4,
           accent: "rgb(56, 130, 248)",
           collateral: "blue chip, wrapped assets, LSTs, stables, RWAs",
@@ -530,6 +545,7 @@
           subtitle: "Multi-Chain Money Market",
           url: "https://aave.com",
           ticker: "AV",
+          icon: "icons/aave.svg",
           shaderVariant: 5,
           accent: "rgb(177, 100, 213)",
           collateral: "blue chip, wrapped assets, LSTs, stables, alt coins",
@@ -781,7 +797,7 @@
       }
 
       function Card({
-        title, subtitle, url, ticker, accent, collateral, stats, shaderVariant,
+        title, subtitle, url, ticker, icon, accent, collateral, stats, shaderVariant,
         i, isSelected, selectedIdx, onClick,
       }) {
         // Top of array (i=0) gets lowest z; bottom (i=N-1) is highest and sits on top.
@@ -855,7 +871,9 @@
             "div",
             { className: "card-hero" },
             h(ShaderCanvas, { variant: shaderVariant, accent, isSelected }),
-            h("span", { className: "card-hero-ticker" }, ticker)
+            icon
+              ? h("img", { className: "card-hero-icon", src: icon, alt: "" })
+              : h("span", { className: "card-hero-ticker" }, ticker)
           ),
           h(
             "div",
