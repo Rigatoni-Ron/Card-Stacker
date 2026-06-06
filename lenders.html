@@ -472,7 +472,7 @@
           ticker: "MP",
           icon: "icons/maple.svg",
           shaderVariant: 0,
-          accent: "rgb(67, 162, 119)",
+          accent: "rgb(232, 134, 64)",
           collateral: "blue chip, stables, RWAs, T-Bills",
           stats: [
             { label: "Min Loan", value: "$1", unit: "M" },
@@ -487,7 +487,7 @@
           ticker: "SP",
           icon: "icons/spark.svg",
           shaderVariant: 1,
-          accent: "rgb(247, 138, 84)",
+          accent: "rgb(247, 130, 124)",
           collateral: "blue chip, LSTs, stables, RWAs",
           stats: [
             { label: "Min Loan", value: "—", unit: "" },
@@ -588,11 +588,13 @@
           float y = (uv.y + warp) * 90.0;
           float d = abs(fract(y) - 0.5) * 2.0;
           float intensity = pow(1.0 - smoothstep(0.0, 0.45, d), 1.5);
-          vec3 grad = mix(uAccent, uAccent * vec3(0.7, 1.3, 0.9), uv.x);
+          // Brightness-only gradient so the hue stays orange and just
+          // darkens toward the right edge (no channel shift to yellow).
+          vec3 grad = mix(uAccent, uAccent * 0.45, uv.x);
           return mix(uAccent * 0.06, grad, intensity);
         }
 
-        // 1 — Spark: radial lines emanating from center with a pulse and rays.
+        // 1 — Spark: concentric radial line pulses warped by a low-freq sine.
         vec3 m1(vec2 uv) {
           vec2 p = uv - 0.5;
           float r = length(p);
@@ -603,8 +605,6 @@
           float d = abs(fract(radial) - 0.5) * 2.0;
           float pulse = 0.7 + 0.3 * sin(uTime * 1.4);
           float intensity = (1.0 - smoothstep(0.0, 0.4, d)) * exp(-r * 1.3) * pulse;
-          float rays = 0.5 + 0.5 * sin(a * 14.0 + t * 0.5);
-          intensity += rays * exp(-r * 2.5) * 0.35;
           vec3 grad = mix(uAccent * 1.15, uAccent * vec3(1.0, 1.1, 0.8), r * 1.8);
           return mix(uAccent * 0.06, grad, clamp(intensity, 0.0, 1.0));
         }
