@@ -587,26 +587,25 @@
           float warp = sin(uv.x * 3.0 + t) * 0.18
                      + sin(uv.x * 7.0 - t * 0.8) * 0.08
                      + sin(uv.x * 13.0 + uv.y * 2.0 + t * 0.4) * 0.04;
-          float y = (uv.y + warp) * 90.0;
+          float y = (uv.y + warp) * 70.0;
           float d = abs(fract(y) - 0.5) * 2.0;
-          float intensity = pow(1.0 - smoothstep(0.0, 0.45, d), 1.5);
+          float intensity = pow(1.0 - smoothstep(0.0, 0.5, d), 2.0);
           // Brightness-only gradient so the hue stays orange and just
           // darkens toward the right edge (no channel shift to yellow).
           vec3 grad = mix(uAccent, uAccent * 0.45, uv.x);
           return mix(uAccent * 0.06, grad, intensity);
         }
 
-        // 1 — Spark: concentric radial line pulses warped by a low-freq sine.
+        // 1 — Spark: concentric radial lines warped by a low-freq sine.
         vec3 m1(vec2 uv) {
           vec2 p = uv - 0.5;
           float r = length(p);
           float a = atan(p.y, p.x);
           float t = uTime * 0.4;
           float warp = sin(a * 4.0 + t) * 0.04;
-          float radial = (r + warp) * 40.0;
+          float radial = (r + warp) * 70.0;
           float d = abs(fract(radial) - 0.5) * 2.0;
-          float pulse = 0.7 + 0.3 * sin(uTime * 1.4);
-          float intensity = (1.0 - smoothstep(0.0, 0.4, d)) * exp(-r * 1.3) * pulse;
+          float intensity = pow(1.0 - smoothstep(0.0, 0.5, d), 2.0);
           vec3 grad = mix(uAccent * 1.15, uAccent * vec3(1.0, 1.1, 0.8), r * 1.8);
           return mix(uAccent * 0.06, grad, clamp(intensity, 0.0, 1.0));
         }
@@ -628,9 +627,9 @@
           float t = uTime * 0.13;
           float warp = sin(uv.y * 2.0 + t) * 0.15
                      + sin(uv.y * 5.0 - t * 0.7) * 0.07;
-          float x = (uv.x + warp) * 80.0;
+          float x = (uv.x + warp) * 70.0;
           float d = abs(fract(x) - 0.5) * 2.0;
-          float intensity = (1.0 - smoothstep(0.0, 0.45, d));
+          float intensity = pow(1.0 - smoothstep(0.0, 0.5, d), 2.0);
           intensity *= 1.0 - uv.y * 0.55;
           vec3 grad = mix(uAccent * 1.2, uAccent * 0.8, uv.y);
           return mix(uAccent * 0.05, grad, intensity);
@@ -641,12 +640,12 @@
           float t = uTime * 0.22;
           float warpA = sin(uv.x * 2.5 + t) * 0.1;
           float warpB = sin(uv.y * 2.5 - t * 0.8) * 0.1;
-          float yA = (uv.y + warpA) * 50.0;
+          float yA = (uv.y + warpA) * 70.0;
           float dA = abs(fract(yA) - 0.5) * 2.0;
-          float intA = 1.0 - smoothstep(0.0, 0.4, dA);
-          float xB = (uv.x + warpB) * 50.0;
+          float intA = pow(1.0 - smoothstep(0.0, 0.5, dA), 2.0);
+          float xB = (uv.x + warpB) * 70.0;
           float dB = abs(fract(xB) - 0.5) * 2.0;
-          float intB = 1.0 - smoothstep(0.0, 0.4, dB);
+          float intB = pow(1.0 - smoothstep(0.0, 0.5, dB), 2.0);
           float intensity = max(intA, intB) * 0.75 + min(intA, intB) * 0.35;
           vec3 grad = mix(uAccent, uAccent * vec3(0.85, 1.1, 1.2), uv.x);
           return mix(uAccent * 0.05, grad, intensity);
@@ -657,10 +656,9 @@
           vec2 p = uv - 0.5;
           float r = length(p);
           float t = uTime * 0.25;
-          float radial = r * 38.0 - t * 1.8;
+          float radial = r * 70.0 - t * 1.8;
           float d = abs(fract(radial) - 0.5) * 2.0;
-          float intensity = 1.0 - smoothstep(0.0, 0.4, d);
-          intensity *= (1.0 - smoothstep(0.4, 0.7, r));
+          float intensity = pow(1.0 - smoothstep(0.0, 0.5, d), 2.0);
           vec3 c1 = uAccent;
           vec3 c2 = uAccent * vec3(1.0, 0.8, 1.2);
           vec3 grad = mix(c1, c2, 0.5 + 0.5 * sin(t * 0.7));
