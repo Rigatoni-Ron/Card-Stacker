@@ -1,0 +1,743 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Card Stacker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --canvas: #d6d9dd;
+        --space-12: 48px;
+        --sans: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text",
+          system-ui, sans-serif;
+
+        /* card tokens (from Figma 1:7) */
+        --card-bg: #1a1a1a;
+        --card-radius: 16px;
+        --card-pad: 12px;
+        --card-gap: 12px;
+        --card-img: 78px;
+        --card-img-bg: rgba(186, 186, 186, 0.2);
+        --card-img-radius: 8px;
+        --card-title: #d2d2d2;
+        --card-subtitle: #777;
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body, #root { height: 100%; }
+
+      body {
+        margin: 0;
+        font-family: var(--sans);
+        background: var(--canvas);
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+
+      /* ── Stage (Crypto glass widget BG) ───────────────────── */
+      .stage {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: var(--space-12);
+        position: relative;
+        overflow: hidden;
+        perspective: 1400px;
+        perspective-origin: 50% 35%;
+        background: radial-gradient(
+            1200px 800px at 70% 20%,
+            #e6e9ed 0%,
+            transparent 60%
+          ),
+          radial-gradient(900px 700px at 20% 90%, #c9ccd1 0%, transparent 55%),
+          var(--canvas);
+      }
+
+      .stage::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(
+            rgba(12, 15, 20, 0.045) 1px,
+            transparent 1px
+          );
+        background-size: 24px 24px;
+        mask-image: radial-gradient(
+          ellipse at center,
+          black 40%,
+          transparent 80%
+        );
+        pointer-events: none;
+      }
+
+      /* ── Stack: vertical lineup of cards ────────────────────── */
+      .stack {
+        position: relative;
+        width: 400px;
+        height: 220px;
+        transform-style: preserve-3d;
+      }
+
+      /* ── Card (matches Figma 1:7) ─────────────────────────── */
+      /* Children are absolutely positioned so we can fluidly morph
+         from a row layout (image left, text right) to a column layout
+         (image on top, text below) when the card is selected. */
+      .card {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        margin-top: -51px;   /* half of 102 (collapsed card height) */
+        margin-left: -200px; /* half of 400 (card width) */
+        width: 400px;
+        height: 102px;
+        /* Floor the bouncy shrink at the resting height so there's always
+           room for the image inside its 12px padding — otherwise the card
+           overshoots smaller than the image and the image pokes out. */
+        min-height: 102px;
+        background: var(--card-bg);
+        border-radius: var(--card-radius);
+        /* Clip any momentary overshoot of the inner image to the card's
+           rounded bounds so the image can bounce in sync without poking out. */
+        overflow: hidden;
+        transform: translate3d(0, var(--ty), 0);
+        transform-origin: 50% 100%;
+        /* Transform and height share the same duration + easing so the
+           card grows as one unified gesture instead of two staggered ones. */
+        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+                    height 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+                    box-shadow 0.18s ease-out,
+                    background 0.18s ease-out,
+                    opacity 0.3s ease-out;
+        will-change: transform;
+        cursor: pointer;
+        z-index: var(--z);
+        box-shadow:
+          0 24px 60px -20px rgba(8, 10, 14, 0.55),
+          0 8px 24px -10px rgba(8, 10, 14, 0.35);
+      }
+
+      /* Selected: non-pressed cards slide left and tuck against the left
+         edge of the viewport at full opacity (no fade). The calc anchors
+         their center 250px from the viewport's left edge — card extends
+         from 50px to 450px in, leaving a tidy margin. The Y uses
+         var(--ty-left) so cards below the selected one shift up a slot
+         to fill the gap, then animate back down on reset. */
+      .stack.selected .card {
+        transform: translate3d(calc(-50vw + 250px), var(--ty-left), 0) rotate(0deg);
+        /* Tucked cards remain clickable so the user can swap selection
+           directly. Durations match the selected card's so the outgoing
+           and incoming card animate on the same clock during a swap. */
+        transition-duration: 0.4s, 0.4s, 0.18s, 0.18s, 0s;
+      }
+
+      /* Selected card: slide up and morph taller in one motion. No
+         delays anywhere on the selected card so transform, height,
+         image scale and text all kick off in the same frame. */
+      .stack.selected .card.is-selected {
+        transform: translate3d(0, var(--top-ty), 0) rotate(0deg);
+        /* Per-card height measured from real content (see Card component)
+           so the card ends 12px below its last element — matching the
+           12px gap above the image. Falls back to 720px pre-measure. */
+        height: var(--expanded-h, 720px);
+        opacity: 1;
+        pointer-events: auto;
+        transition-delay: 0s, 0s, 0s, 0s, 0s;
+        transition-duration: 0.4s, 0.4s, 0.18s, 0.18s, 0s;
+        box-shadow:
+          0 24px 60px -20px rgba(8, 10, 14, 0.55),
+          0 8px 24px -10px rgba(8, 10, 14, 0.35);
+      }
+
+      /* Hover: card surface brightens. */
+      .card:hover {
+        background: #262626;
+      }
+
+      /* Image element is its full 376×376 size and we scale it DOWN
+         for the collapsed state. Rendering at native resolution avoids
+         the blur (and extra GPU upscale work) of growing a tiny raster
+         up to 4.82× its size. Border-radius is inverse-scaled so the
+         visible rounding stays ~8px in both states. */
+      .card-img {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        width: 376px;
+        height: 376px;
+        border-radius: 38.6px;
+        background: var(--card-img-bg);
+        object-fit: cover;
+        display: block;
+        z-index: 1;
+        transform: scale(0.2074);
+        transform-origin: top left;
+        will-change: transform;
+        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+                    border-radius 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+
+      /* Video overlay: shares the image's geometry and scale
+         choreography, layered directly on top. Only the selected
+         card is given a src (set in JS), so collapsed cards load
+         nothing. Starts transparent and fades in once the first
+         frame is ready, so the still image beneath never flashes
+         to black while the clip buffers. */
+      .card-video {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        width: 376px;
+        height: 376px;
+        border-radius: 38.6px;
+        object-fit: cover;
+        display: block;
+        z-index: 2;
+        opacity: 0;
+        transform: scale(0.2074);
+        transform-origin: top left;
+        will-change: transform, opacity;
+        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+                    border-radius 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+                    opacity 0.3s ease-out;
+      }
+      .card-video.is-ready {
+        opacity: 1;
+      }
+      .stack.selected .card.is-selected .card-video {
+        transform: scale(1);
+        border-radius: 8px;
+        transition-timing-function: cubic-bezier(0.7, 0, 0.3, 1);
+      }
+
+      /* Text path is split across two nested elements so the Y axis
+         and X axis can be choreographed independently. The visual
+         result is a curved path "around" the image instead of a
+         straight diagonal that would cut underneath it. */
+      .card-text {
+        position: absolute;
+        top: 400px;
+        left: 12px;
+        width: 376px;
+        /* Outer wrapper owns vertical motion. */
+        transform: translate3d(0, -375px, 0);
+        will-change: transform;
+        transition: transform 0.38s cubic-bezier(0.34, 1.2, 0.64, 1);
+      }
+
+      .card-text-inner {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        /* Inner owns horizontal motion. */
+        transform: translate3d(90px, 0, 0);
+        will-change: transform;
+        transition: transform 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
+      }
+
+      /* Selected: image grows to 376×376 in lock-step with the card
+         and text, no hard delay. The S-curve easing holds the image
+         small at the very start of the animation (giving the text Y
+         a moment to drop below the image's growing footprint) and
+         then sweeps it to full size, all inside the same window. */
+      .stack.selected .card.is-selected .card-img {
+        transform: scale(1);
+        border-radius: 8px;
+        transition-delay: 0s, 0s;
+        transition-timing-function: cubic-bezier(0.7, 0, 0.3, 1);
+      }
+
+      /* Text Y drops immediately so it clears the image's growing
+         footprint as one continuous motion with the card expanding. */
+      .stack.selected .card.is-selected .card-text {
+        transform: translate3d(0, 0, 0);
+        transition-delay: 0s;
+      }
+
+      /* Text X slides left a hair after Y has begun, so the text path
+         curves around the image's right edge instead of diagonally
+         cutting through it. The delay is short enough that, paired
+         with overlapping easings, it still reads as one fluid gesture. */
+      .stack.selected .card.is-selected .card-text-inner {
+        transform: translate3d(0, 0, 0);
+        transition-delay: 0.1s;
+      }
+
+      .card-title {
+        margin: 0;
+        font-family: var(--sans);
+        font-weight: 500;
+        font-size: 18px;
+        line-height: 27px;
+        color: var(--card-title);
+      }
+
+      .card-subtitle {
+        margin: 0;
+        font-family: var(--sans);
+        font-weight: 400;
+        font-size: 14px;
+        line-height: 21px;
+        color: var(--card-subtitle);
+      }
+
+      /* ── Expanded-only content ──────────────────────────────
+         Sits below the title at a fixed position inside the card.
+         The card's overflow:hidden naturally clips this until the
+         card has grown tall enough to reveal it. Each child fades
+         and lifts in with a staggered delay so the section reads
+         as one cascade rather than a single block pop. */
+      .card-extra {
+        position: absolute;
+        top: 476px;
+        left: 12px;
+        right: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        pointer-events: none;
+      }
+
+      /* Default (collapsed / non-selected): children are hidden.
+         The very short opacity transition handles the close path —
+         a snap would leave one jarring frame where the card is
+         still tall enough to show the content at full opacity. */
+      .card-extra > * {
+        opacity: 0;
+        transform: translateY(10px);
+        transition: opacity 0.1s ease-out, transform 0s;
+      }
+
+      /* Selected: each child fades and lifts into place. Delays
+         start ~0.2s in so the content arrives as the card's
+         growing height first reveals this region. */
+      .stack.selected .card.is-selected .card-extra {
+        pointer-events: auto;
+      }
+      .stack.selected .card.is-selected .card-extra > * {
+        opacity: 1;
+        transform: translateY(0);
+        transition: opacity 0.35s ease-out,
+                    transform 0.45s cubic-bezier(0.34, 1.2, 0.64, 1);
+      }
+      .stack.selected .card.is-selected .card-extra > *:nth-child(1) { transition-delay: 0.18s; }
+      .stack.selected .card.is-selected .card-extra > *:nth-child(2) { transition-delay: 0.24s; }
+      .stack.selected .card.is-selected .card-extra > *:nth-child(3) { transition-delay: 0.30s; }
+      .stack.selected .card.is-selected .card-extra > *:nth-child(4) { transition-delay: 0.36s; }
+
+      /* Tags row: small status chips. One chip is keyed to the
+         card's --accent color so each EVA has a unique visual mark. */
+      .card-tags {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .card-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.72);
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+      }
+      .card-tag.accent {
+        color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 14%, transparent);
+        border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+      }
+      .card-tag .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: currentColor;
+      }
+
+      /* Stats: three-column data panel. 1px gap + dark child bg
+         on lighter parent gives the inset divider look without
+         actual borders between cells. */
+      .card-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .card-stat {
+        background: rgba(0, 0, 0, 0.28);
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .card-stat .label {
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.42);
+      }
+      .card-stat .value {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--card-title);
+        font-variant-numeric: tabular-nums;
+      }
+      .card-stat .unit {
+        font-size: 11px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.4);
+        margin-left: 2px;
+      }
+
+      /* Pilot row: avatar + name + designation code. The avatar
+         picks up --accent so it reads as part of the EVA's identity. */
+      .card-pilot {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .card-pilot .avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        font-size: 13px;
+        font-weight: 600;
+        color: #111;
+        background: var(--accent);
+        flex-shrink: 0;
+      }
+      .card-pilot .info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex: 1;
+        min-width: 0;
+      }
+      .card-pilot .name {
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 1.2;
+        color: var(--card-title);
+      }
+      .card-pilot .role {
+        font-size: 11px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--card-subtitle);
+      }
+      .card-pilot .code {
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        color: rgba(255, 255, 255, 0.4);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .card-desc {
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.55;
+        color: rgba(255, 255, 255, 0.62);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://esm.sh/react@18.3.1",
+          "react-dom/client": "https://esm.sh/react-dom@18.3.1/client"
+        }
+      }
+    </script>
+
+    <script type="module">
+      import React, { useState, useRef, useEffect } from "react";
+      import { createRoot } from "react-dom/client";
+
+      const h = React.createElement;
+
+      const CARDS = [
+        {
+          title: "EVA Unit-01",
+          subtitle: "Test Type",
+          img: "images/eva-01.jpg",
+          video: "images/eva-01.mp4",
+          accent: "rgb(178, 132, 224)",
+          tags: ["Active", "Berserk Capable", "Soul Construct"],
+          stats: [
+            { label: "Height", value: "40", unit: "m" },
+            { label: "Weight", value: "700", unit: "t" },
+            { label: "Sync", value: "41.3", unit: "%" },
+          ],
+          pilot: { name: "Shinji Ikari", role: "3rd Child · Pilot", initial: "S", code: "P-01" },
+          desc: "Designated for synchronization with the 3rd Child. Soul construct integration enables uncontrolled berserker states under extreme duress.",
+        },
+        {
+          title: "EVA Unit-02",
+          subtitle: "Production Model",
+          img: "images/eva-02.jpg",
+          video: "images/eva-02.mp4",
+          accent: "rgb(236, 96, 82)",
+          tags: ["Active", "Combat Class", "S2 Compatible"],
+          stats: [
+            { label: "Height", value: "41", unit: "m" },
+            { label: "Weight", value: "740", unit: "t" },
+            { label: "Sync", value: "67.5", unit: "%" },
+          ],
+          pilot: { name: "Asuka L. Soryu", role: "2nd Child · Pilot", initial: "A", code: "P-02" },
+          desc: "First true Production Model. Optimized for offensive operations across terrestrial, aquatic, and orbital theaters.",
+        },
+        {
+          title: "EVA Unit-08",
+          subtitle: "Improved Type 4β",
+          img: "images/eva-08.jpg",
+          video: "images/eva-08.mp4",
+          accent: "rgb(232, 108, 168)",
+          tags: ["Active", "High Mobility", "Chainsaw Config"],
+          stats: [
+            { label: "Height", value: "80", unit: "m" },
+            { label: "Weight", value: "960", unit: "t" },
+            { label: "Sync", value: "89.0", unit: "%" },
+          ],
+          pilot: { name: "Mari Makinami", role: "Euro-NERV · Pilot", initial: "M", code: "P-08" },
+          desc: "High-mobility frame deployed for vector-aligned strikes. Chainsaw configuration is tuned for sustained close-quarters engagements.",
+        },
+        {
+          title: "EVA Prototype",
+          subtitle: "Pre-Production Frame",
+          img: "images/eva-prototype.jpg",
+          video: "images/eva-prototype.mp4",
+          accent: "rgb(108, 148, 224)",
+          tags: ["Restricted", "Prototype Frame", "Unverified"],
+          stats: [
+            { label: "Height", value: "38", unit: "m" },
+            { label: "Weight", value: "690", unit: "t" },
+            { label: "Sync", value: "—", unit: "" },
+          ],
+          pilot: { name: "Unassigned", role: "NERV-1 · Sealed", initial: "?", code: "P-XX" },
+          desc: "Pre-production test frame. Synchronization protocols are unverified for human operation. Records sealed under MAGI Directive 9.",
+        },
+        {
+          title: "EVA Unit-00",
+          subtitle: "Prototype",
+          img: "images/eva-00.jpg",
+          video: "images/eva-00.mp4",
+          accent: "rgb(224, 166, 76)",
+          tags: ["Active", "First Activation", "Stable"],
+          stats: [
+            { label: "Height", value: "39", unit: "m" },
+            { label: "Weight", value: "685", unit: "t" },
+            { label: "Sync", value: "38.7", unit: "%" },
+          ],
+          pilot: { name: "Rei Ayanami", role: "1st Child · Pilot", initial: "R", code: "P-00" },
+          desc: "Prototype Unit recovered from the initial activation incident. Operating below specification but stable under controlled engagement.",
+        },
+        {
+          title: "EVA Mark.06",
+          subtitle: "Lunar Construct",
+          img: "images/eva-mark-06.jpg",
+          video: "images/eva-mark-06.mp4",
+          accent: "rgb(140, 144, 156)",
+          tags: ["Operational", "Seed of Life", "Apostle Class"],
+          stats: [
+            { label: "Height", value: "60", unit: "m" },
+            { label: "Weight", value: "870", unit: "t" },
+            { label: "Sync", value: "100", unit: "%" },
+          ],
+          pilot: { name: "Kaworu Nagisa", role: "SEELE · Pilot", initial: "K", code: "P-06" },
+          desc: "Constructed in lunar orbit using a recovered Seed of Life. Outclasses production-line units by an order of magnitude.",
+        },
+      ];
+
+      const N = CARDS.length;
+      const CARD_H = 102;        // 78px image + 12px*2 padding
+      const STACK_GAP = 12;      // vertical gap between cards in the lineup
+      const ROW_PITCH = CARD_H + STACK_GAP;
+
+      // Y-position of the top card; the selected card snaps here.
+      const TOP_TY = (0 - (N - 1) / 2) * ROW_PITCH;
+
+      function Card({
+        title, subtitle, img, video, accent, tags, stats, pilot, desc,
+        i, isSelected, selectedIdx, onClick,
+      }) {
+        // Top of array (i=0) gets lowest z; bottom (i=N-1) is highest and sits on top.
+        // When a card is selected it must paint above the others as they exit.
+        const z = isSelected ? N + 1 : i + 1;
+        const ty = (i - (N - 1) / 2) * ROW_PITCH;
+        // Cards below the selected one shift up by a slot to fill the gap
+        // it left behind. Cards above the selection stay put.
+        const shiftUp = selectedIdx !== null && !isSelected && i > selectedIdx;
+        const tyLeft = shiftUp ? ty - ROW_PITCH : ty;
+
+        // Lazy video: the clip's src is only attached the first time
+        // this card is selected, so the collapsed stack downloads nothing.
+        // On deselect we pause, drop the source, and reset readiness so
+        // the memory is freed and the still image takes over again.
+        const videoRef = useRef(null);
+        const [videoReady, setVideoReady] = useState(false);
+        useEffect(() => {
+          const v = videoRef.current;
+          if (!v) return;
+          if (isSelected) {
+            if (v.getAttribute("src") !== video) v.setAttribute("src", video);
+            v.currentTime = 0;
+            const p = v.play();
+            if (p && p.catch) p.catch(() => {});
+          } else {
+            v.pause();
+            v.removeAttribute("src");
+            v.load();
+            setVideoReady(false);
+          }
+        }, [isSelected, video]);
+
+        // The extra-content block is absolutely positioned, so the card
+        // can't auto-size to it. Measure where it actually ends and set
+        // the expanded height to leave a 12px bottom margin matching the
+        // top padding. Re-measure after web fonts load, since text wrap
+        // (and therefore the block's height) can shift once Inter swaps in.
+        const extraRef = useRef(null);
+        const [expandedH, setExpandedH] = useState(null);
+        useEffect(() => {
+          const el = extraRef.current;
+          if (!el) return;
+          const measure = () => setExpandedH(el.offsetTop + el.offsetHeight + 12);
+          measure();
+          if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(measure);
+          }
+        }, []);
+
+        const statsEl = h(
+          "div",
+          { className: "card-stats" },
+          stats.map((s, si) =>
+            h(
+              "div",
+              { key: si, className: "card-stat" },
+              h("span", { className: "label" }, s.label),
+              h(
+                "span",
+                { className: "value" },
+                s.value,
+                s.unit ? h("span", { className: "unit" }, s.unit) : null
+              )
+            )
+          )
+        );
+
+        const pilotEl = h(
+          "div",
+          { className: "card-pilot" },
+          h("div", { className: "avatar" }, pilot.initial),
+          h(
+            "div",
+            { className: "info" },
+            h("div", { className: "name" }, pilot.name),
+            h("div", { className: "role" }, pilot.role)
+          ),
+          h("div", { className: "code" }, pilot.code)
+        );
+
+        return h(
+          "article",
+          {
+            className: "card" + (isSelected ? " is-selected" : ""),
+            onClick,
+            style: {
+              "--z": z,
+              "--ty": ty + "px",
+              "--ty-left": tyLeft + "px",
+              "--top-ty": TOP_TY + "px",
+              "--accent": accent,
+              "--expanded-h": expandedH ? expandedH + "px" : undefined,
+            },
+          },
+          h("img", { className: "card-img", src: img, alt: "" }),
+          h("video", {
+            className: "card-video" + (videoReady ? " is-ready" : ""),
+            ref: videoRef,
+            muted: true,
+            loop: true,
+            playsInline: true,
+            preload: "none",
+            onPlaying: () => setVideoReady(true),
+          }),
+          h(
+            "div",
+            { className: "card-text" },
+            h(
+              "div",
+              { className: "card-text-inner" },
+              h("h3", { className: "card-title" }, title),
+              h("p", { className: "card-subtitle" }, subtitle)
+            )
+          ),
+          h(
+            "div",
+            { className: "card-extra", ref: extraRef },
+            pilotEl,
+            h("p", { className: "card-desc" }, desc),
+            statsEl
+          )
+        );
+      }
+
+      // Default: vertical lineup. Click a card → others exit left, picked
+      // card rides up to the top slot and morphs into a tall vertical layout.
+      function App() {
+        const [selected, setSelected] = useState(null);
+
+        const reset = () => setSelected(null);
+
+        return h(
+          "div",
+          {
+            className: "stage",
+            onClick: reset,
+          },
+          h(
+            "div",
+            { className: "stack" + (selected !== null ? " selected" : "") },
+            CARDS.map((c, i) =>
+              h(Card, {
+                key: i,
+                i,
+                ...c,
+                isSelected: selected === i,
+                selectedIdx: selected,
+                onClick: (e) => {
+                  e.stopPropagation();
+                  if (selected === i) reset();
+                  else setSelected(i);
+                },
+              })
+            )
+          )
+        );
+      }
+
+      createRoot(document.getElementById("root")).render(h(App));
+    </script>
+  </body>
+</html>
