@@ -176,9 +176,12 @@
         position: absolute;
         top: 12px;
         left: 12px;
-        width: 376px;
-        height: 376px;
-        border-radius: 38.6px;
+        /* Default = collapsed thumbnail. width/height morph (rather
+           than transform scale) so the icon inside isn't squished by
+           the rectangle-to-square aspect ratio change. */
+        width: 78px;
+        height: 78px;
+        border-radius: 8px;
         display: grid;
         place-items: center;
         z-index: 1;
@@ -194,15 +197,12 @@
         font-size: 168px;
         letter-spacing: -0.04em;
         line-height: 1;
-        transform: scale(0.2074);
-        transform-origin: top left;
-        will-change: transform;
-        transition: transform 0.5s cubic-bezier(0.34, 1.25, 0.64, 1),
-                    border-radius 0.5s cubic-bezier(0.34, 1.25, 0.64, 1);
+        transition: width 0.5s cubic-bezier(0.34, 1.25, 0.64, 1),
+                    height 0.5s cubic-bezier(0.34, 1.25, 0.64, 1);
       }
       .stack.selected .card.is-selected .card-hero {
-        transform: scale(1);
-        border-radius: 8px;
+        width: 376px;
+        height: 200px;
         transition-timing-function: cubic-bezier(0.7, 0, 0.3, 1);
       }
 
@@ -240,9 +240,18 @@
       .card-hero-icon {
         position: relative;
         z-index: 1;
-        width: 220px;
-        height: 220px;
+        /* Default = collapsed icon size. Transitions to 120px when
+           the card expands, in lockstep with the hero's growth. */
+        width: 42px;
+        height: 42px;
         display: block;
+        transition: width 0.5s cubic-bezier(0.34, 1.25, 0.64, 1),
+                    height 0.5s cubic-bezier(0.34, 1.25, 0.64, 1);
+      }
+      .stack.selected .card.is-selected .card-hero-icon {
+        width: 120px;
+        height: 120px;
+        transition-timing-function: cubic-bezier(0.7, 0, 0.3, 1);
       }
 
       /* Text path is split across two nested elements so the Y axis
@@ -251,7 +260,7 @@
          straight diagonal that would cut underneath it. */
       .card-text {
         position: absolute;
-        top: 400px;
+        top: 224px;
         left: 12px;
         width: 376px;
         /* Outer wrapper owns vertical motion. Flex row so the linkout
@@ -260,7 +269,10 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        transform: translate3d(0, -375px, 0);
+        /* Collapsed text y = 25 (vertically centered in the 102px
+           row); 224 - 25 = 199 — lifts the text into the collapsed
+           row position when not selected. */
+        transform: translate3d(0, -199px, 0);
         will-change: transform;
         transition: transform 0.48s cubic-bezier(0.34, 1.1, 0.64, 1);
       }
@@ -361,7 +373,7 @@
          as one cascade rather than a single block pop. */
       .card-extra {
         position: absolute;
-        top: 476px;
+        top: 300px;
         left: 12px;
         right: 12px;
         display: flex;
@@ -731,9 +743,8 @@
           if (!canvas) return;
 
           const dpr = Math.min(window.devicePixelRatio || 1, 2);
-          const size = 376;
-          canvas.width = size * dpr;
-          canvas.height = size * dpr;
+          canvas.width = 376 * dpr;
+          canvas.height = 200 * dpr;
 
           const gl = canvas.getContext("webgl", {
             antialias: true,
