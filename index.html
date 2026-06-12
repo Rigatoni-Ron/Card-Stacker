@@ -569,10 +569,13 @@
         line-height: 1.4em;
         vertical-align: top;
       }
+      /* Each child span is a single letter — inline-block so it can be
+         transformed individually. Animation-delay is set inline per
+         letter so they cascade up one after another. */
       .card-cta-rolodex > span {
-        display: block;
+        display: inline-block;
         transform: translateY(100%);
-        animation: card-cta-roll-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.4s forwards;
+        animation: card-cta-roll-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       }
       @keyframes card-cta-roll-up {
         from { transform: translateY(100%); }
@@ -1119,7 +1122,18 @@
                   h(
                     "span",
                     { className: "card-cta-rolodex" },
-                    h("span", null, "Request sent")
+                    "Request sent".split("").map((char, i) =>
+                      h(
+                        "span",
+                        {
+                          key: i,
+                          // Each letter starts 0.035s after the previous,
+                          // creating a wave of letters rolling into place.
+                          style: { animationDelay: (0.2 + i * 0.035) + "s" },
+                        },
+                        char === " " ? " " : char
+                      )
+                    )
                   )
             )
           )
