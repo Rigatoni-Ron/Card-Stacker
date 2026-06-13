@@ -476,12 +476,11 @@
         font-family: var(--sans);
         font-size: 14px;
         font-weight: 500;
+        /* Explicit line-height pinned to the rolodex's so the button
+           height doesn't change between idle text and the rolodex. */
+        line-height: 1.4;
         text-align: center;
         cursor: pointer;
-        position: relative;
-        /* Clips the plane while it's still off-screen and the rolodex
-           text while it's below the visible row. */
-        overflow: hidden;
         transition: background 0.22s cubic-bezier(0.16, 1, 0.3, 1),
                     color 0.22s cubic-bezier(0.16, 1, 0.3, 1),
                     scale 0.22s cubic-bezier(0.16, 1, 0.3, 1);
@@ -500,19 +499,10 @@
          "this action is complete" against the dark card surface. The
          slower transition fires when .is-sending is removed, so the
          surface eases into the muted look rather than snapping. */
+      /* Disabled keeps the active light fill — the rolodex landing
+         on "Request sent" is the completion cue. */
       .card-cta:disabled {
-        background: rgba(255, 255, 255, 0.08);
-        color: rgba(255, 255, 255, 0.5);
         cursor: default;
-        transition: background 0.7s ease-out, color 0.7s ease-out;
-      }
-      /* Loading and sending states keep the active light fill so they
-         read as "your request is being processed" — only once we land
-         on `sent` does the surface ease into the muted finished state. */
-      .card-cta.is-loading:disabled,
-      .card-cta.is-sending:disabled {
-        background: #e2e2e2;
-        color: #1a1a1a;
       }
       /* Three-dot bouncy loader. Each dot rises and falls on its own
          delay, creating a wave of motion across the trio. */
@@ -536,28 +526,6 @@
       @keyframes card-cta-bounce {
         0%, 80%, 100% { transform: translateY(0); opacity: 0.3; }
         40% { transform: translateY(-4px); opacity: 1; }
-      }
-
-      /* Paper plane soaring across the button on the loading→sending
-         transition. Fades in shortly after entering the left edge and
-         fades out before exiting the right. */
-      .card-cta-plane {
-        position: absolute;
-        top: 50%;
-        left: 0;
-        font-size: 20px;
-        line-height: 1;
-        color: inherit;
-        transform: translateY(-50%);
-        opacity: 0;
-        animation: card-cta-plane-fly 0.7s cubic-bezier(0.4, 0, 0.6, 1) forwards;
-        pointer-events: none;
-      }
-      @keyframes card-cta-plane-fly {
-        0% { left: -32px; opacity: 0; }
-        15% { opacity: 1; }
-        85% { opacity: 1; }
-        100% { left: calc(100% + 32px); opacity: 0; }
       }
 
       /* Rolodex container — the visible "slot" through which the
@@ -979,10 +947,9 @@
         const [isHovered, setIsHovered] = useState(false);
         // CTA state machine: idle → loading → sending → sent.
         // - loading (1.2s): bouncy dots simulate the async request
-        // - sending (1.2s): paper plane soars across, "Request sent"
-        //   rolls up in a rolodex slot
-        // - sent: button disables and surface eases into the muted
-        //   completed colors
+        // - sending (1.2s): "Request sent" rolls up letter by letter
+        //   in a rolodex slot
+        // - sent: button disables
         const [ctaState, setCtaState] = useState("idle");
         const ctaTimeoutRef = useRef(null);
         useEffect(() => {
@@ -1085,9 +1052,7 @@
               "button",
               {
                 type: "button",
-                className: "card-cta" +
-                  (ctaState === "loading" ? " is-loading" : "") +
-                  (ctaState === "sending" ? " is-sending" : ""),
+                className: "card-cta",
                 disabled: ctaState !== "idle",
                 // Stop the card's onClick so pressing the CTA doesn't
                 // also collapse the card. Walks the button through
@@ -1111,11 +1076,6 @@
                 h("span"),
                 h("span"),
                 h("span")
-              ),
-              ctaState === "sending" && h(
-                "span",
-                { className: "card-cta-plane material-symbols-outlined" },
-                "send"
               ),
               ctaState === "idle" ? "Add counterparty" :
                 ctaState === "loading" ? "Adding..." :
