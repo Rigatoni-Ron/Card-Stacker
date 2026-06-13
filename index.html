@@ -481,12 +481,18 @@
         line-height: 1.4;
         text-align: center;
         cursor: pointer;
-        transition: background 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-                    color 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+        /* Long bg/color transition lives on the base so it's already
+           in effect when .is-sent triggers the value swap — the new
+           computed style alone wasn't reliable to drive a 2s fade. */
+        transition: background 2s ease,
+                    color 2s ease,
                     scale 0.22s cubic-bezier(0.16, 1, 0.3, 1);
       }
       .card-cta:hover:not(:disabled) {
         background: #ffffff;
+        /* Hover wants a snappy fill change, so override the slow base
+           timing back to ~0.22s while still allowing :is-sent to ease. */
+        transition: background 0.22s ease, scale 0.22s cubic-bezier(0.16, 1, 0.3, 1);
       }
       /* Press feedback — scales down while held and pops back on
          release. Uses the standalone `scale` property so it composes
@@ -503,6 +509,13 @@
          on "Request sent" is the completion cue. */
       .card-cta:disabled {
         cursor: default;
+      }
+      /* Sent: muted dark fill with light text. The 2s ease transition
+         is supplied by the base .card-cta rule above, so swapping in
+         this class triggers the slow drift to the completed look. */
+      .card-cta.is-sent {
+        background: rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.5);
       }
       /* Three-dot bouncy loader. Each dot rises and falls on its own
          delay, creating a wave of motion across the trio. */
@@ -1052,7 +1065,7 @@
               "button",
               {
                 type: "button",
-                className: "card-cta",
+                className: "card-cta" + (ctaState === "sent" ? " is-sent" : ""),
                 disabled: ctaState !== "idle",
                 // Stop the card's onClick so pressing the CTA doesn't
                 // also collapse the card. Walks the button through
