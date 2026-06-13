@@ -481,6 +481,10 @@
         line-height: 1.4;
         text-align: center;
         cursor: pointer;
+        position: relative;
+        /* Clips the plane while it's still off-screen during the
+           sending state. */
+        overflow: hidden;
         /* Long bg/color transition lives on the base so it's already
            in effect when .is-sent triggers the value swap — the new
            computed style alone wasn't reliable to drive a 2s fade. */
@@ -539,6 +543,28 @@
       @keyframes card-cta-bounce {
         0%, 80%, 100% { transform: translateY(0); opacity: 0.3; }
         40% { transform: translateY(-4px); opacity: 1; }
+      }
+
+      /* Paper plane soaring across the button on the loading→sending
+         transition. Fades in shortly after entering the left edge and
+         fades out before exiting the right. */
+      .card-cta-plane {
+        position: absolute;
+        top: 50%;
+        left: 0;
+        font-size: 20px;
+        line-height: 1;
+        color: inherit;
+        transform: translateY(-50%);
+        opacity: 0;
+        animation: card-cta-plane-fly 1s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+        pointer-events: none;
+      }
+      @keyframes card-cta-plane-fly {
+        0% { left: calc(50% - 60px); opacity: 0; }
+        25% { opacity: 1; }
+        75% { opacity: 1; }
+        100% { left: calc(50% + 60px); opacity: 0; }
       }
 
       /* Rolodex container — the visible "slot" through which the
@@ -960,9 +986,9 @@
         const [isHovered, setIsHovered] = useState(false);
         // CTA state machine: idle → loading → sending → sent.
         // - loading (1.2s): bouncy dots simulate the async request
-        // - sending (1.2s): "Request sent" rolls up letter by letter
-        //   in a rolodex slot
-        // - sent: button disables
+        // - sending (2s): plane soars across (~1s), then "Request sent"
+        //   rolls up letter by letter in a rolodex slot
+        // - sent: button disables and surface slowly fades to muted
         const [ctaState, setCtaState] = useState("idle");
         const ctaTimeoutRef = useRef(null);
         useEffect(() => {
@@ -1079,7 +1105,7 @@
                     ctaTimeoutRef.current = setTimeout(() => {
                       setCtaState("sent");
                       ctaTimeoutRef.current = null;
-                    }, 1200);
+                    }, 2000);
                   }, 1200);
                 },
               },
@@ -1089,6 +1115,11 @@
                 h("span"),
                 h("span"),
                 h("span")
+              ),
+              ctaState === "sending" && h(
+                "span",
+                { className: "card-cta-plane material-symbols-outlined" },
+                "send"
               ),
               ctaState === "idle" ? "Add counterparty" :
                 ctaState === "loading" ? "Adding..." :
@@ -1100,9 +1131,10 @@
                         "span",
                         {
                           key: i,
-                          // Each letter starts 0.035s after the previous,
-                          // creating a wave of letters rolling into place.
-                          style: { animationDelay: (0.2 + i * 0.035) + "s" },
+                          // Letters start rolling in after the plane has
+                          // flown across (1s), then each follows 0.035s
+                          // behind the previous for a staggered wave.
+                          style: { animationDelay: (1 + i * 0.035) + "s" },
                         },
                         char === " " ? " " : char
                       )
