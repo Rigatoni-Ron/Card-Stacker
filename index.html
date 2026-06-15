@@ -186,12 +186,11 @@
         place-items: center;
         z-index: 1;
         overflow: hidden;
-        background:
-          linear-gradient(
-            135deg,
-            var(--accent) 0%,
-            color-mix(in srgb, var(--accent) 45%, #0e0f12) 100%
-          );
+        /* Flat dark surface underneath the shader canvas so the brief
+           moment before WebGL paints its first frame doesn't flash the
+           old colorful gradient. Matches the shader's dark base
+           (uAccent * 0.06 is near-black for every accent). */
+        background: #0e0f12;
         color: rgba(255, 255, 255, 0.94);
         font-weight: 700;
         font-size: 168px;
@@ -604,7 +603,7 @@
     </script>
 
     <script type="module">
-      import React, { useState, useRef, useEffect } from "react";
+      import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
       import { createRoot } from "react-dom/client";
 
       const h = React.createElement;
@@ -843,7 +842,10 @@
         // frame at t=0. preserveDrawingBuffer:true keeps that frame
         // visible after the rAF loop stops, so collapsed cards show
         // the same shader look as the start of the animation.
-        useEffect(() => {
+        // useLayoutEffect runs before the browser paints so the first
+        // shader frame is on screen at the same time as the rest of
+        // the card, with no gradient-to-shader flash on initial load.
+        useLayoutEffect(() => {
           const canvas = canvasRef.current;
           if (!canvas) return;
 
